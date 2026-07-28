@@ -46,7 +46,8 @@ Write-Host "ATENCAO: Siga a sequencia no menu azul que vai carregar:"
 Write-Host ""
 Write-Host "1. No menu principal, digite a OPCAO [2] (Ohook)."
 Write-Host "2. No proximo menu, digite a OPCAO [1] (Install Ohook)."
-Write-Host "3. Quando a ativacao terminar, digite [0] para sair."
+Write-Host "3. Quando a ativacao terminar, aperte [ENTER] para voltar."
+Write-Host "4. De volta ao menu principal, digite [0] para sair."
 Write-Host "========================================================" -ForegroundColor Cyan
 Start-Sleep -Seconds 4
 
