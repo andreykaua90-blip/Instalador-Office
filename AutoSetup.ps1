@@ -16,6 +16,8 @@ if ($SysLang -ne "pt") {
     $MsgClean = "Cleaning up temporary files..."
     $MsgSuccess = "Process finished successfully!"
     $MsgODTFail = "Could not locate the Office Deployment Tool download link."
+    $MsgActivate = "Do you want to activate Office now using Ohook? (Y/N)"
+    $MsgSkipped = "Activation skipped."
 } else {
     $MsgAdmin = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title = "Instalador Automatico - Office LTSC"
@@ -29,6 +31,8 @@ if ($SysLang -ne "pt") {
     $MsgClean = "Limpando arquivos temporarios..."
     $MsgSuccess = "Processo finalizado com sucesso!"
     $MsgODTFail = "Nao foi possivel localizar o link de download do Office Deployment Tool."
+    $MsgActivate = "Deseja ativar o Office agora usando Ohook? (S/N)"
+    $MsgSkipped = "Ativacao ignorada."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -141,9 +145,16 @@ Write-Host $MsgWait -ForegroundColor Gray
 Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure config.xml" -Wait -NoNewWindow
 
 Write-Host ""
-Write-Host $MsgStep3 -ForegroundColor Yellow
-$MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
-Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
+$Ativar = Read-Host $MsgActivate
+
+if ($Ativar -match '^[sSyY]') {
+    Write-Host $MsgStep3 -ForegroundColor Yellow
+    $MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
+    Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
+}
+else {
+    Write-Host $MsgSkipped -ForegroundColor Gray
+}
 
 Write-Host ""
 Write-Host $MsgClean -ForegroundColor Gray
