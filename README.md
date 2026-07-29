@@ -1,28 +1,32 @@
-*Read this in other languages: [🇧🇷 Português](#-instalador-automático-e-inteligente---office-ltsc) | [🇺🇸 English](#-smart-automatic-installer---office-ltsc)*
+# AutoSetup - Office LTSC Deployment
 
----
+PowerShell script developed to automate the configuration, download, installation, and activation processes of Microsoft Office LTSC 2024.
 
-# 🇧🇷 Instalador Automático e Inteligente - Office LTSC
+The script operates autonomously (via remote execution) and handles official Microsoft deployment tools, as well as integrating local command-line activation methods.
 
-Este repositório contém um script avançado em PowerShell projetado para automatizar totalmente o processo de download, personalização, instalação e ativação do Microsoft Office LTSC (2024).
+## Methodology and Tools
 
-Esqueça tutoriais complexos ou arquivos de configuração manuais. O script faz todo o trabalho pesado por você, desde identificar a arquitetura e o idioma do seu sistema até realizar a ativação permanente e silenciosa.
+* **Office Deployment Tool (ODT):** The script utilizes the official `officedeploymenttool_20131-20090.exe` binary stored in this repository. This executable is silently extracted to obtain the `setup.exe` tool, which is then used to download and apply installation packages directly from Microsoft CDN servers.
+* **Dynamic XML Generation:** The script eliminates the need for a static `config.xml` file in the repository. The PowerShell code processes user input and generates the XML configuration file at runtime, injecting `<ExcludeApp ID="..." />` tags for the software the user chooses not to install.
+* **Environment Detection:**
+  * **Architecture:** Uses the `[Environment]::Is64BitOperatingSystem` method to automatically set the `OfficeClientEdition` tag (32 or 64-bit).
+  * **Localization (Language):** The `<Language ID="MatchOS" />` parameter instructs the ODT to download Office in the operating system's native language. The script also uses `(Get-UICulture).TwoLetterISOLanguageName` to determine the output language of the terminal strings.
+* **Activation (Ohook Method):** Activation is achieved through integration with Microsoft Activation Scripts (MAS). The script calls the URL `get.activated.win` passing the `/ohook` argument, which overrides the local license validation routines (SPP - Software Protection Platform), resulting in a permanent activation.
 
-## ✨ Principais Recursos
+## Execution Flow
 
-* **🌐 Multi-idioma Automático:** O script detecta silenciosamente o idioma do seu Windows (Português ou Inglês) e adapta toda a interface do terminal, além de baixar o Office no idioma nativo do sistema (`MatchOS`).
-* **🧠 Criação Dinâmica de XML:** Você não precisa de arquivos `config.xml` pré-prontos. O script gera o arquivo de configuração na hora.
-* **🎯 Instalação Sob Medida:** O menu interativo permite que você escolha *exatamente* quais aplicativos quer instalar (Word, Excel, PowerPoint, etc.), ignorando o que você não usa.
-* **⚙️ Detecção Automática de Arquitetura:** O script identifica sozinho se o seu Windows é de 32 ou 64 bits e adapta a instalação.
-* **⚡ Ativação Zero-Touch:** Graças à integração direta com o Microsoft Activation Scripts (MAS), o Office é ativado permanentemente via método Ohook em segundo plano.
-* **🧹 100% Limpo:** Todos os downloads ocorrem em uma pasta temporária (`C:\Office_Temp`) que é deletada automaticamente assim que o processo termina.
+1. Creation of the temporary working directory (`C:\Office_Temp`).
+2. System data collection (Language and Architecture).
+3. User input collection via console to define the package scope.
+4. Writing the `config.xml` file to the temporary directory.
+5. Downloading the official ODT executable (`officedeploymenttool_20131-20090.exe`) stored in this repository.
+6. Silent extraction of `officedeploymenttool_20131-20090.exe` to generate the `setup.exe` binary, followed by the installation initialization via `setup.exe /configure config.xml`.
+7. Background execution of the MAS script (Ohook).
+8. Recursive deletion of the `C:\Office_Temp` directory to clean the environment.
 
-## 💻 Como Usar (Comando Único)
+## Usage (Step-by-Step)
 
-Você **não precisa baixar** nenhum arquivo manualmente. Basta executar um único comando no seu computador e seguir o menu de seleção de aplicativos na tela.
-
-1. Clique com o botão direito no menu Iniciar e abra o **Windows PowerShell (Administrador)** ou **Terminal (Administrador)**.
-2. Copie o comando exato abaixo e pressione **Enter**:
-
-```powershell
-irm [https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1](https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1) | iex
+1. Open **Windows PowerShell** or **Windows Terminal** with Administrator privileges.
+2. Run the following command:
+   ```powershell
+   irm [https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1](https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1) | iex
