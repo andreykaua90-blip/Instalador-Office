@@ -2,7 +2,6 @@ $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 
-# Detecta automaticamente o idioma do sistema
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 if ($SysLang -ne "pt") {
     $MsgAdmin = "Permission denied! Please open PowerShell as Administrator and run the command again."
@@ -98,24 +97,20 @@ $XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
 Write-Host ""
 Write-Host $MsgStep1 -ForegroundColor Yellow
 
-# ========== Baixar e extrair o Office Deployment Tool (sempre atualizado) ==========
 $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
 $Destino = $Dir
 
 Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
 try {
     $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing -ErrorAction Stop
-
-    # Regex atualizado (funciona com a estrutura atual da página)
     $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
-
     if ($html.Content -match $regex) {
         $DownloadUrl = $matches[0]
         $Arquivo = Join-Path $Destino "OfficeDeploymentTool.exe"
-        
+       
         Write-Host "Baixando ODT..." -ForegroundColor Gray
         Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
-        
+       
         Write-Host "Extraindo arquivos..." -ForegroundColor Gray
         Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Destino`"" -Wait -NoNewWindow
     }
