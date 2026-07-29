@@ -11,7 +11,7 @@ The script operates autonomously (via remote execution) and handles official Mic
 * **Environment Detection:**
   * **Architecture:** Uses the `[Environment]::Is64BitOperatingSystem` method to automatically set the `OfficeClientEdition` tag (32 or 64-bit).
   * **Localization (Language):** The `<Language ID="MatchOS" />` parameter instructs the ODT to download Office in the operating system's native language. The script also uses `(Get-UICulture).TwoLetterISOLanguageName` to determine the output language of the terminal strings.
-* **Activation (Ohook Method):** Activation is achieved through integration with Microsoft Activation Scripts (MAS). The script calls the URL `get.activated.win` passing the `/ohook` argument, which overrides the local license validation routines (SPP - Software Protection Platform), resulting in a permanent activation.
+* **Activation (Ohook Method):** Activation is achieved through integration with Microsoft Activation Scripts (MAS). The script calls the URL get.activated.win passing the `/ohook` argument, which overrides the local license validation routines (SPP - Software Protection Platform), resulting in a permanent activation.
 
 ## Execution Flow
 
