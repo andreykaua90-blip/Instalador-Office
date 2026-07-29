@@ -100,18 +100,21 @@ Write-Host $MsgStep1 -ForegroundColor Yellow
 
 # ========== Baixar e extrair o Office Deployment Tool (sempre atualizado) ==========
 $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
-$Destino = $Dir   # já estamos em C:\Office_Temp
+$Destino = $Dir
 
 Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
 try {
-    $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing
-    $regex = '"url":[](https://download.microsoft.com/download/[^"]+officedeploymenttool[^"]+\.exe)"'
+    $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing -ErrorAction Stop
+
+    # Regex atualizado (funciona com a estrutura atual da página)
+    $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
+
     if ($html.Content -match $regex) {
-        $DownloadUrl = $matches[1] -replace '\\u0026','&' -replace '\\/','/'
+        $DownloadUrl = $matches[0]
         $Arquivo = Join-Path $Destino "OfficeDeploymentTool.exe"
         
         Write-Host "Baixando ODT..." -ForegroundColor Gray
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
         
         Write-Host "Extraindo arquivos..." -ForegroundColor Gray
         Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Destino`"" -Wait -NoNewWindow
