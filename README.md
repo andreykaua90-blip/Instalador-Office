@@ -31,6 +31,9 @@ The script operates autonomously (via remote execution) and handles official Mic
    ```powershell
    irm https://raw.githubusercontent.com/andreykaua90-blip/Office-AutoSetup/main/AutoSetup.ps1 | iex
 
+---
+---
+
 # AutoSetup - Implantação do Office LTSC
 
 Script em PowerShell desenvolvido para a automação dos processos de configuração, download, instalação e ativação do Microsoft Office LTSC 2024.
