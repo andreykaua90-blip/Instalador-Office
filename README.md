@@ -30,3 +30,37 @@ The script operates autonomously (via remote execution) and handles official Mic
 2. Run the following command:
    ```powershell
    irm https://raw.githubusercontent.com/andreykaua90-blip/Office-AutoSetup/main/AutoSetup.ps1 | iex
+
+
+# AutoSetup - Implantação do Office LTSC
+
+Script em PowerShell desenvolvido para a automação dos processos de configuração, download, instalação e ativação do Microsoft Office LTSC 2024.
+
+O script opera de forma autônoma (via execução remota) e manipula as ferramentas oficiais de implantação da Microsoft, além de integrar métodos de ativação locais via linha de comando.
+
+## Metodologia e Ferramentas
+
+* **Office Deployment Tool (ODT):** O script utiliza o binário oficial `officedeploymenttool_20131-20090.exe` armazenado neste repositório. Este executável é extraído silenciosamente para obter a ferramenta `setup.exe`, que é então utilizada para baixar e aplicar os pacotes de instalação diretamente dos servidores CDN da Microsoft.
+* **Geração Dinâmica de XML:** O script dispensa o uso de um arquivo `config.xml` estático no repositório. O código PowerShell processa o input do usuário e gera o arquivo XML em tempo de execução, injetando as tags `<ExcludeApp ID="..." />` para os softwares que o usuário optar por não instalar.
+* **Detecção de Ambiente:**
+  * **Arquitetura:** Utiliza o método `[Environment]::Is64BitOperatingSystem` para definir automaticamente a tag `OfficeClientEdition` (32 ou 64 bits).
+  * **Localização (Idioma):** O parâmetro `<Language ID="MatchOS" />` instrui o ODT a baixar o Office no mesmo idioma do sistema operacional. O script também utiliza `(Get-UICulture).TwoLetterISOLanguageName` para definir o idioma das strings de saída do próprio terminal.
+* **Ativação (Método Ohook):** A ativação é realizada através da integração com o Microsoft Activation Scripts (MAS). O script aciona a URL get.activated.win passando o argumento `/ohook`, que atua substituindo as rotinas locais de validação de licença (SPP - Software Protection Platform), resultando em uma ativação permanente.
+
+## Fluxo de Execução
+
+1. Criação do diretório temporário de trabalho (`C:\Office_Temp`).
+2. Coleta de dados do sistema (Idioma e Arquitetura).
+3. Coleta do input do usuário via console para definir o escopo dos pacotes.
+4. Escrita do arquivo `config.xml` no diretório temporário.
+5. Download do executável oficial ODT (`officedeploymenttool_20131-20090.exe`) armazenado neste repositório.
+6. Extração silenciosa do `officedeploymenttool_20131-20090.exe` para gerar o binário `setup.exe`, seguida da inicialização da instalação via `setup.exe /configure config.xml`.
+7. Execução em segundo plano do script do MAS (Ohook).
+8. Exclusão recursiva do diretório `C:\Office_Temp` para limpeza do ambiente.
+
+## Uso
+
+1. Abra o **Windows PowerShell** ou o **Terminal do Windows** com privilégios de Administrador.
+2. Execute o comando abaixo:
+   ```powershell
+   irm https://raw.githubusercontent.com/andreykaua90-blip/Office-AutoSetup/main/AutoSetup.ps1 | iex
