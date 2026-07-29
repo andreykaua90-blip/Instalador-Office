@@ -1,4 +1,3 @@
-$ArquivoXml = "Configuração.xml"
 $ArquivoOdt = "officedeploymenttool_20131-20090.exe"
 
 $Host.UI.RawUI.BackgroundColor = "Black"
@@ -16,13 +15,64 @@ $Dir = "C:\Office_Temp"
 New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 Set-Location -Path $Dir
 
+$Arch = if ([Environment]::Is64BitOperatingSystem) { "64" } else { "32" }
+
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "   Instalador Automatico - Office LTSC" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "Selecione APENAS os programas que deseja INSTALAR:" -ForegroundColor Yellow
+Write-Host "[1] Word"
+Write-Host "[2] Excel"
+Write-Host "[3] PowerPoint"
+Write-Host "[4] Access"
+Write-Host "[5] Outlook"
+Write-Host "[6] OneNote"
+Write-Host "[7] Publisher"
+Write-Host "[8] OneDrive"
+Write-Host "[9] Lync (Skype)"
+Write-Host ""
+$Opcoes = Read-Host "Digite os numeros desejados separados por virgula (ex: 1,2,3)"
 
-Write-Host "[1/3] Baixando arquivos do GitHub e extraindo..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri "$BaseUrl/$ArquivoXml" -OutFile $ArquivoXml
+$OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() }
+
+$Excludes = ""
+if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
+if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
+if ("3" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"PowerPoint`" />`n" }
+if ("4" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Access`" />`n" }
+if ("5" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Outlook`" />`n" }
+if ("6" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneNote`" />`n" }
+if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" />`n" }
+if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
+if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
+
+$XmlContent = @"
+<Configuration ID="0e135344-f323-430f-9825-667da45ea0b2">
+  <Add OfficeClientEdition="$Arch" Channel="PerpetualVL2024">
+    <Product ID="ProPlus2024Volume" PIDKEY="XJ2XN-FW8RK-P4HMP-DKDBV-GCVGB">
+      <Language ID="MatchOS" />
+$Excludes    </Product>
+  </Add>
+  <Property Name="SharedComputerLicensing" Value="0" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="FALSE" />
+  <Property Name="DeviceBasedLicensing" Value="0" />
+  <Property Name="SCLCacheOverride" Value="0" />
+  <Property Name="AUTOACTIVATE" Value="1" />
+  <Updates Enabled="TRUE" />
+  <RemoveMSI />
+  <AppSettings>
+    <User Key="software\microsoft\office\16.0\excel\options" Name="defaultformat" Value="51" Type="REG_DWORD" App="excel16" Id="L_SaveExcelfilesas" />
+    <User Key="software\microsoft\office\16.0\powerpoint\options" Name="defaultformat" Value="27" Type="REG_DWORD" App="ppt16" Id="L_SavePowerPointfilesas" />
+    <User Key="software\microsoft\office\16.0\word\options" Name="defaultformat" Value="" Type="REG_SZ" App="word16" Id="L_SaveWordfilesas" />
+  </AppSettings>
+</Configuration>
+"@
+
+$XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
+
+Write-Host ""
+Write-Host "[1/3] Baixando ferramenta de instalacao e extraindo..." -ForegroundColor Yellow
 Invoke-WebRequest -Uri "$BaseUrl/$ArquivoOdt" -OutFile $ArquivoOdt
 
 Start-Process -FilePath ".\$ArquivoOdt" -ArgumentList "/extract:.\ /quiet" -Wait -NoNewWindow
@@ -35,23 +85,15 @@ if (-Not (Test-Path "setup.exe")) {
 }
 
 Write-Host ""
-Write-Host "[2/3] Instalando o Office..." -ForegroundColor Yellow
+Write-Host "[2/3] Instalando o Office ($Arch bits)..." -ForegroundColor Yellow
 Write-Host "Aguarde a janela da Microsoft concluir o progresso. Isso pode demorar alguns minutos." -ForegroundColor Gray
-Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure $ArquivoXml" -Wait -NoNewWindow
+Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure config.xml" -Wait -NoNewWindow
 
 Write-Host ""
-Write-Host "[3/3] Iniciando o processo de ativacao (Ohook)..." -ForegroundColor Yellow
-Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "ATENCAO: Siga a sequencia no menu azul que vai carregar:" 
-Write-Host ""
-Write-Host "1. No menu principal, digite a OPCAO [2] (Ohook)."
-Write-Host "2. No proximo menu, digite a OPCAO [1] (Install Ohook)."
-Write-Host "3. Quando a ativacao terminar, aperte [ENTER] para voltar."
-Write-Host "4. De volta ao menu principal, digite [0] para sair."
-Write-Host "========================================================" -ForegroundColor Cyan
-Start-Sleep -Seconds 4
+Write-Host "[3/3] Iniciando o processo de ativacao automatica (Ohook)..." -ForegroundColor Yellow
 
-Invoke-Expression (Invoke-RestMethod -Uri "https://get.activated.win")
+$MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
+Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
 
 Write-Host ""
 Write-Host "Limpando arquivos temporarios..." -ForegroundColor Gray
