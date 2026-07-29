@@ -29,4 +29,4 @@ The script operates autonomously (via remote execution) and handles official Mic
 1. Open **Windows PowerShell** or **Windows Terminal** with Administrator privileges.
 2. Run the following command:
    ```powershell
-   irm [https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1](https://raw.githubusercontent.com/andreykaua90-blip/Instalador-Office/main/AutoSetup.ps1) | iex
+   irm [https://raw.githubusercontent.com/andreykaua90-blip/Office-AutoSetup/main/AutoSetup.ps1](https://raw.githubusercontent.com/andreykaua90-blip/Office-AutoSetup/main/AutoSetup.ps1) | iex
