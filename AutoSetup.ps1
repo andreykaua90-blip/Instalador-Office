@@ -4,8 +4,37 @@ $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 
+# Detecta automaticamente o idioma do sistema
+$SysLang = (Get-UICulture).TwoLetterISOLanguageName
+
+if ($SysLang -ne "pt") {
+    $MsgAdmin = "Permission denied! Please open PowerShell as Administrator and run the command again."
+    $Title = "Automatic Installer - Office LTSC"
+    $MsgSelect = "Select ONLY the programs you want to INSTALL:"
+    $MsgInput = "Enter the desired numbers separated by comma (e.g., 1,2,3)"
+    $MsgStep1 = "[1/3] Downloading installation tool and extracting..."
+    $MsgError = "[ERROR] Failed to extract setup.exe. Check the executable name."
+    $MsgStep2 = "[2/3] Installing Office"
+    $MsgWait = "Please wait for the Microsoft window to finish the progress. This may take a few minutes."
+    $MsgStep3 = "[3/3] Starting automatic activation process (Ohook)..."
+    $MsgClean = "Cleaning up temporary files..."
+    $MsgSuccess = "Process finished successfully!"
+} else {
+    $MsgAdmin = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
+    $Title = "Instalador Automatico - Office LTSC"
+    $MsgSelect = "Selecione APENAS os programas que deseja INSTALAR:"
+    $MsgInput = "Digite os numeros desejados separados por virgula (ex: 1,2,3)"
+    $MsgStep1 = "[1/3] Baixando ferramenta de instalacao e extraindo..."
+    $MsgError = "[ERRO] Falha ao extrair o setup.exe. Verifique o nome do executavel."
+    $MsgStep2 = "[2/3] Instalando o Office"
+    $MsgWait = "Aguarde a janela da Microsoft concluir o progresso. Isso pode demorar alguns minutos."
+    $MsgStep3 = "[3/3] Iniciando o processo de ativacao automatica (Ohook)..."
+    $MsgClean = "Limpando arquivos temporarios..."
+    $MsgSuccess = "Processo finalizado com sucesso!"
+}
+
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Warning "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
+    Write-Warning $MsgAdmin
     Break
 }
 
@@ -18,10 +47,10 @@ Set-Location -Path $Dir
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "64" } else { "32" }
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "   Instalador Automatico - Office LTSC" -ForegroundColor Cyan
+Write-Host "   $Title" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Selecione APENAS os programas que deseja INSTALAR:" -ForegroundColor Yellow
+Write-Host $MsgSelect -ForegroundColor Yellow
 Write-Host "[1] Word"
 Write-Host "[2] Excel"
 Write-Host "[3] PowerPoint"
@@ -32,7 +61,7 @@ Write-Host "[7] Publisher"
 Write-Host "[8] OneDrive"
 Write-Host "[9] Lync (Skype)"
 Write-Host ""
-$Opcoes = Read-Host "Digite os numeros desejados separados por virgula (ex: 1,2,3)"
+$Opcoes = Read-Host $MsgInput
 
 $OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() }
 
@@ -72,34 +101,34 @@ $Excludes    </Product>
 $XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
 
 Write-Host ""
-Write-Host "[1/3] Baixando ferramenta de instalacao e extraindo..." -ForegroundColor Yellow
+Write-Host $MsgStep1 -ForegroundColor Yellow
 Invoke-WebRequest -Uri "$BaseUrl/$ArquivoOdt" -OutFile $ArquivoOdt
 
 Start-Process -FilePath ".\$ArquivoOdt" -ArgumentList "/extract:.\ /quiet" -Wait -NoNewWindow
 
 if (-Not (Test-Path "setup.exe")) {
-    Write-Error "[ERRO] Falha ao extrair o setup.exe. Verifique o nome do executavel."
+    Write-Error $MsgError
     Set-Location -Path "C:\"
     Remove-Item -Path $Dir -Recurse -Force
     Break
 }
 
 Write-Host ""
-Write-Host "[2/3] Instalando o Office ($Arch bits)..." -ForegroundColor Yellow
-Write-Host "Aguarde a janela da Microsoft concluir o progresso. Isso pode demorar alguns minutos." -ForegroundColor Gray
+Write-Host "$MsgStep2 ($Arch bits)..." -ForegroundColor Yellow
+Write-Host $MsgWait -ForegroundColor Gray
 Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure config.xml" -Wait -NoNewWindow
 
 Write-Host ""
-Write-Host "[3/3] Iniciando o processo de ativacao automatica (Ohook)..." -ForegroundColor Yellow
+Write-Host $MsgStep3 -ForegroundColor Yellow
 
 $MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
 Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
 
 Write-Host ""
-Write-Host "Limpando arquivos temporarios..." -ForegroundColor Gray
+Write-Host $MsgClean -ForegroundColor Gray
 Set-Location -Path "C:\"
 Remove-Item -Path $Dir -Recurse -Force
 
 Write-Host "========================================================" -ForegroundColor Green
-Write-Host "   Processo finalizado com sucesso!" -ForegroundColor Green
+Write-Host "   $MsgSuccess" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
