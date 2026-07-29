@@ -24,7 +24,7 @@ The script operates autonomously (via remote execution) and handles official Mic
 7. Background execution of the MAS script (Ohook).
 8. Recursive deletion of the `C:\Office_Temp` directory to clean the environment.
 
-## Usage (Step-by-Step)
+## Usage
 
 1. Open **Windows PowerShell** or **Windows Terminal** with Administrator privileges.
 2. Run the following command:
