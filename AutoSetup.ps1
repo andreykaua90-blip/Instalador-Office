@@ -4,10 +4,15 @@ Clear-Host
 $ProgressPreference = 'SilentlyContinue'
 
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
+
 if ($SysLang -ne "pt") {
+    # ==================== ENGLISH ====================
     $MsgAdmin     = "Permission denied! Please open PowerShell as Administrator and run the command again."
     $Title        = "Automatic Installer / Uninstaller - Office"
     $MsgMenu      = "What do you want to do?"
+    $MsgOpt1      = "[1] Install Office"
+    $MsgOpt2      = "[2] Uninstall Office"
+    $MsgOpt3      = "[3] Exit"
     $MsgSelectVer = "Select the Office version:"
     $MsgSelect    = "Select the programs you want to INSTALL:"
     $MsgSelectRem = "Select the programs you want to REMOVE:"
@@ -28,10 +33,17 @@ if ($SysLang -ne "pt") {
     $MsgRemAct    = "Removing activation..."
     $MsgInvalid   = "Invalid option."
     $MsgConfirm   = "Confirm? (Y = Continue / N = Back)"
+    $MsgBack      = "[0] Back"
+    $MsgAll       = "[A] All"
+    $MsgPrompt    = "Enter your choice"
 } else {
+    # ==================== PORTUGUÊS ====================
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title        = "Instalador / Desinstalador Automatico - Office"
     $MsgMenu      = "O que deseja fazer?"
+    $MsgOpt1      = "[1] Instalar Office"
+    $MsgOpt2      = "[2] Desinstalar Office"
+    $MsgOpt3      = "[3] Sair"
     $MsgSelectVer = "Selecione a versao do Office:"
     $MsgSelect    = "Selecione os programas que deseja INSTALAR:"
     $MsgSelectRem = "Selecione os programas que deseja REMOVER:"
@@ -52,6 +64,9 @@ if ($SysLang -ne "pt") {
     $MsgRemAct    = "Removendo ativacao..."
     $MsgInvalid   = "Opcao invalida."
     $MsgConfirm   = "Confirmar? (S = Continuar / N = Voltar)"
+    $MsgBack      = "[0] Voltar"
+    $MsgAll       = "[A] Todos"
+    $MsgPrompt    = "Digite sua opcao"
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -100,11 +115,11 @@ function Get-ODT {
 while ($true) {
     Show-Header
     Write-Host $MsgMenu -ForegroundColor Yellow
-    Write-Host "[1] Instalar Office"
-    Write-Host "[2] Desinstalar Office"
-    Write-Host "[3] Sair"
+    Write-Host $MsgOpt1
+    Write-Host $MsgOpt2
+    Write-Host $MsgOpt3
     Write-Host ""
-    $Acao = Read-Host "Digite 1, 2 ou 3"
+    $Acao = Read-Host $MsgPrompt
 
     if ($Acao -eq "3") {
         Set-Location C:\
@@ -128,8 +143,8 @@ while ($true) {
             Write-Host "[8] OneDrive"
             Write-Host "[9] Lync (Skype)"
             Write-Host ""
-            Write-Host "[A] Remover TODOS"
-            Write-Host "[0] Voltar"
+            Write-Host $MsgAll
+            Write-Host $MsgBack
             Write-Host ""
             $Opcoes = Read-Host $MsgInput
 
@@ -177,7 +192,6 @@ while ($true) {
 </Configuration>
 "@
             } else {
-                # Remove apenas os selecionados (mantém os outros)
                 $Excludes = ""
                 if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
                 if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
@@ -253,9 +267,9 @@ $Excludes    </Product>
         Write-Host "[1] Office LTSC Professional Plus 2024"
         Write-Host "[2] Office LTSC Professional Plus 2021"
         Write-Host "[3] Office Professional Plus 2019"
-        Write-Host "[0] Voltar"
+        Write-Host $MsgBack
         Write-Host ""
-        $Versao = Read-Host "Digite o numero"
+        $Versao = Read-Host $MsgPrompt
 
         if ($Versao -eq "0") { continue MenuPrincipal }
 
@@ -295,8 +309,8 @@ $Excludes    </Product>
             Write-Host "[8] OneDrive"
             Write-Host "[9] Lync (Skype)"
             Write-Host ""
-            Write-Host "[A] Instalar TODOS"
-            Write-Host "[0] Voltar"
+            Write-Host $MsgAll
+            Write-Host $MsgBack
             Write-Host ""
             $Opcoes = Read-Host $MsgInput
 
