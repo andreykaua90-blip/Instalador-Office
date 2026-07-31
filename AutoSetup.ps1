@@ -2,7 +2,6 @@ $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 
-# Detecta idioma
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 if ($SysLang -ne "pt") {
     $MsgAdmin     = "Permission denied! Please open PowerShell as Administrator and run the command again."
@@ -12,18 +11,20 @@ if ($SysLang -ne "pt") {
     $MsgSelect    = "Select ONLY the programs you want to INSTALL:"
     $MsgInput     = "Enter the desired numbers separated by comma (e.g., 1,2,3)"
     $MsgStep1     = "[1/3] Downloading Office Deployment Tool and extracting..."
-    $MsgError     = "[ERROR] Failed to extract setup.exe."
+    $MsgError     = "[ERROR] Failed to extract setup.exe. Check the download."
     $MsgStep2     = "[2/3] Installing Office"
-    $MsgWait      = "Please wait for the Microsoft window to finish. This may take a few minutes."
-    $MsgStep3     = "[3/3] Starting automatic activation (Ohook)..."
+    $MsgWait      = "Please wait for the Microsoft window to finish the progress. This may take a few minutes."
+    $MsgStep3     = "[3/3] Starting automatic activation process (Ohook)..."
     $MsgClean     = "Cleaning up temporary files..."
     $MsgSuccess   = "Process finished successfully!"
     $MsgODTFail   = "Could not locate the Office Deployment Tool download link."
-    $MsgInvalid   = "Invalid option."
+    $MsgActivate  = "Do you want to activate Office now using Ohook? (Y/N)"
+    $MsgSkipped   = "Activation skipped."
     $MsgUninst    = "Uninstalling Office completely..."
     $MsgUninstOk  = "Office uninstalled successfully!"
     $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
     $MsgRemAct    = "Removing activation..."
+    $MsgInvalid   = "Invalid option."
 } else {
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title        = "Instalador / Desinstalador Automatico - Office"
@@ -32,18 +33,20 @@ if ($SysLang -ne "pt") {
     $MsgSelect    = "Selecione APENAS os programas que deseja INSTALAR:"
     $MsgInput     = "Digite os numeros desejados separados por virgula (ex: 1,2,3)"
     $MsgStep1     = "[1/3] Baixando Office Deployment Tool e extraindo..."
-    $MsgError     = "[ERRO] Falha ao extrair o setup.exe."
+    $MsgError     = "[ERRO] Falha ao extrair o setup.exe. Verifique o download."
     $MsgStep2     = "[2/3] Instalando o Office"
     $MsgWait      = "Aguarde a janela da Microsoft concluir o progresso. Isso pode demorar alguns minutos."
     $MsgStep3     = "[3/3] Iniciando o processo de ativacao automatica (Ohook)..."
     $MsgClean     = "Limpando arquivos temporarios..."
     $MsgSuccess   = "Processo finalizado com sucesso!"
     $MsgODTFail   = "Nao foi possivel localizar o link de download do Office Deployment Tool."
-    $MsgInvalid   = "Opcao invalida."
+    $MsgActivate  = "Deseja ativar o Office agora usando Ohook? (S/N)"
+    $MsgSkipped   = "Ativacao ignorada."
     $MsgUninst    = "Desinstalando o Office completamente..."
     $MsgUninstOk  = "Office desinstalado com sucesso!"
     $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
     $MsgRemAct    = "Removendo ativacao..."
+    $MsgInvalid   = "Opcao invalida."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -73,27 +76,42 @@ if ($Acao -eq "2") {
     Write-Host ""
     Write-Host $MsgUninst -ForegroundColor Yellow
 
-    # Baixa ODT
+    # --- Download do ODT (método que está funcionando) ---
     $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
+    $Destino = $Dir
+
+    Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
     try {
-        $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing
-        $regex = '"url":[](https://download.microsoft.com/download/[^"]+officedeploymenttool[^"]+\.exe)"'
+        $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing -ErrorAction Stop
+        $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
         if ($html.Content -match $regex) {
-            $DownloadUrl = $matches[1] -replace '\\u0026','&' -replace '\\/','/'
-            $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
-            Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo
-            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
-        } else {
+            $DownloadUrl = $matches[0]
+            $Arquivo = Join-Path $Destino "OfficeDeploymentTool.exe"
+           
+            Write-Host "Baixando ODT..." -ForegroundColor Gray
+            Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
+           
+            Write-Host "Extraindo arquivos..." -ForegroundColor Gray
+            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Destino`"" -Wait -NoNewWindow
+        }
+        else {
             Write-Error $MsgODTFail
+            Set-Location -Path "C:\"
+            Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
             Break
         }
-    } catch {
-        Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
+    }
+    catch {
+        Write-Error "Erro ao baixar o Office Deployment Tool: $($_.Exception.Message)"
+        Set-Location -Path "C:\"
+        Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         Break
     }
 
     if (-Not (Test-Path ".\setup.exe")) {
         Write-Error $MsgError
+        Set-Location -Path "C:\"
+        Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         Break
     }
 
@@ -125,8 +143,8 @@ if ($Acao -eq "2") {
         }
     }
 
-    # Limpeza final
-    Set-Location C:\
+    # Limpeza
+    Set-Location -Path "C:\"
     Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
 
     Write-Host ""
@@ -139,7 +157,7 @@ if ($Acao -eq "2") {
 # ======================== INSTALAR ========================
 if ($Acao -ne "1") {
     Write-Error $MsgInvalid
-    Set-Location C:\
+    Set-Location -Path "C:\"
     Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
     Break
 }
@@ -173,7 +191,7 @@ switch ($Versao) {
     }
     default {
         Write-Error $MsgInvalid
-        Set-Location C:\
+        Set-Location -Path "C:\"
         Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         Break
     }
@@ -191,24 +209,24 @@ Write-Host "[5] Outlook"
 Write-Host "[6] OneNote"
 Write-Host "[7] Publisher"
 Write-Host "[8] OneDrive"
-Write-Host "[9] Lync (Skype for Business)"
+Write-Host "[9] Lync (Skype)"
 Write-Host ""
 $Opcoes = Read-Host $MsgInput
 $OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() }
 
 $Excludes = ""
-if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
-if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
-if ("3" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"PowerPoint`" />`n" }
-if ("4" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Access`" />`n" }
-if ("5" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Outlook`" />`n" }
-if ("6" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneNote`" />`n" }
-if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" />`n" }
-if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
-if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
+if ("1" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Word`" />`n" }
+if ("2" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Excel`" />`n" }
+if ("3" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"PowerPoint`" />`n" }
+if ("4" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Access`" />`n" }
+if ("5" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Outlook`" />`n" }
+if ("6" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"OneNote`" />`n" }
+if ("7" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Publisher`" />`n" }
+if ("8" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"OneDrive`" />`n" }
+if ("9" -notin $OpcoesArray) { $Excludes += " <ExcludeApp ID=`"Lync`" />`n" }
 
 if ($Versao -eq "3") {
-    $Excludes += "      <ExcludeApp ID=`"Groove`" />`n"
+    $Excludes += " <ExcludeApp ID=`"Groove`" />`n"
 }
 
 $XmlContent = @"
@@ -216,7 +234,7 @@ $XmlContent = @"
   <Add OfficeClientEdition="$Arch" Channel="$Channel">
     <Product ID="$ProductID" PIDKEY="$PIDKEY">
       <Language ID="MatchOS" />
-$Excludes    </Product>
+$Excludes </Product>
   </Add>
   <Property Name="SharedComputerLicensing" Value="0" />
   <Property Name="FORCEAPPSHUTDOWN" Value="FALSE" />
@@ -232,34 +250,47 @@ $Excludes    </Product>
   </AppSettings>
 </Configuration>
 "@
-
 $XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
 
 Write-Host ""
 Write-Host $MsgStep1 -ForegroundColor Yellow
 
+# --- Download do ODT (método que está funcionando) ---
 $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
+$Destino = $Dir
+
+Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
 try {
-    $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing
-    $regex = '"url":[](https://download.microsoft.com/download/[^"]+officedeploymenttool[^"]+\.exe)"'
+    $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing -ErrorAction Stop
+    $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
     if ($html.Content -match $regex) {
-        $DownloadUrl = $matches[1] -replace '\\u0026','&' -replace '\\/','/'
-        $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
+        $DownloadUrl = $matches[0]
+        $Arquivo = Join-Path $Destino "OfficeDeploymentTool.exe"
+       
         Write-Host "Baixando ODT..." -ForegroundColor Gray
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo
-        Write-Host "Extraindo..." -ForegroundColor Gray
-        Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
-    } else {
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
+       
+        Write-Host "Extraindo arquivos..." -ForegroundColor Gray
+        Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Destino`"" -Wait -NoNewWindow
+    }
+    else {
         Write-Error $MsgODTFail
+        Set-Location -Path "C:\"
+        Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         Break
     }
-} catch {
-    Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
+}
+catch {
+    Write-Error "Erro ao baixar o Office Deployment Tool: $($_.Exception.Message)"
+    Set-Location -Path "C:\"
+    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
     Break
 }
 
 if (-Not (Test-Path ".\setup.exe")) {
     Write-Error $MsgError
+    Set-Location -Path "C:\"
+    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
     Break
 }
 
@@ -269,13 +300,20 @@ Write-Host $MsgWait -ForegroundColor Gray
 Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure config.xml" -Wait -NoNewWindow
 
 Write-Host ""
-Write-Host $MsgStep3 -ForegroundColor Yellow
-$MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
-Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
+$Ativar = Read-Host $MsgActivate
+
+if ($Ativar -match '^[sSyY]') {
+    Write-Host $MsgStep3 -ForegroundColor Yellow
+    $MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
+    Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/ohook"
+}
+else {
+    Write-Host $MsgSkipped -ForegroundColor Gray
+}
 
 Write-Host ""
 Write-Host $MsgClean -ForegroundColor Gray
-Set-Location C:\
+Set-Location -Path "C:\"
 Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "========================================================" -ForegroundColor Green
