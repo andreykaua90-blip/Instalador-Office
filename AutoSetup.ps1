@@ -230,7 +230,7 @@ while ($true) {
                 $RemoveXml = @"
 <Configuration>
   <Remove All="TRUE" />
-  <Display Level="Full" AcceptEULA="TRUE" />
+  <Display Level="None" AcceptEULA="TRUE" />
   <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
 </Configuration>
 "@
@@ -243,7 +243,7 @@ while ($true) {
       <Language ID="MatchOS" />
 $Excludes    </Product>
   </Add>
-  <Display Level="Full" AcceptEULA="TRUE" />
+  <Display Level="None" AcceptEULA="TRUE" />
   <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
   <RemoveMSI />
 </Configuration>
@@ -253,29 +253,19 @@ $Excludes    </Product>
             $RemoveXml | Out-File ".\remove.xml" -Encoding UTF8
 
             Write-Host ""
-            Write-Host $MsgWait -ForegroundColor Yellow
-            Write-Host $MsgWaitWindow -ForegroundColor Gray
+            Write-Host "Iniciando a desinstalacao silenciosa..." -ForegroundColor Yellow
+            Write-Host "O Office esta sendo removido no fundo. Aguarde" -NoNewline -ForegroundColor Gray
             
-            # Inicia o desinstalador sem travar o script (-PassThru em vez de -Wait)
+            # Inicia o desinstalador oculto
             $SetupProc = Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -WindowStyle Hidden -PassThru
             
-            # Automação para apertar "Enter" sozinho
-            $wshell = New-Object -ComObject wscript.shell
-            $tentativas = 0
-            
-            # Tenta focar na janela por até 15 segundos
-            while ($tentativas -lt 15) {
-                Start-Sleep -Seconds 1
-                if ($wshell.AppActivate($SetupProc.Id)) {
-                    Start-Sleep -Milliseconds 800 # Aguarda a tela desenhar o botão
-                    $wshell.SendKeys("{ENTER}") # Aperta Enter no botão "Desinstalar"
-                    break
-                }
-                $tentativas++
+            # Loop que imprime pontinhos no terminal para mostrar que o script nao travou
+            while (-not $SetupProc.HasExited) {
+                Start-Sleep -Seconds 2
+                Write-Host "." -NoNewline -ForegroundColor Gray
             }
             
-            # Agora pausa o script do PowerShell até a desinstalação inteira terminar
-            $SetupProc | Wait-Process
+            Write-Host " Concluido!" -ForegroundColor Green
 
             Write-Host ""
             Write-Host $MsgUninstDone -ForegroundColor Green
