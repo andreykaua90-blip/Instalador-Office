@@ -26,6 +26,8 @@ if ($SysLang -ne "pt") {
     $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
     $MsgRemAct    = "Removing activation..."
     $MsgInvalid   = "Invalid option."
+    $MsgConfirm   = "Confirm and continue with the installation? (Y/N)"
+    $MsgCancel    = "Installation cancelled."
 } else {
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title        = "Instalador / Desinstalador Automatico - Office"
@@ -48,6 +50,8 @@ if ($SysLang -ne "pt") {
     $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
     $MsgRemAct    = "Removendo ativacao..."
     $MsgInvalid   = "Opcao invalida."
+    $MsgConfirm   = "Confirmar e continuar com a instalacao? (S/N)"
+    $MsgCancel    = "Instalacao cancelada."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -77,7 +81,6 @@ if ($Acao -eq "2") {
     Write-Host ""
     Write-Host $MsgUninst -ForegroundColor Yellow
 
-    # --- Download do ODT (método que está funcionando) ---
     $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
     $Destino = $Dir
 
@@ -116,11 +119,10 @@ if ($Acao -eq "2") {
         Break
     }
 
-    # XML de remoção total
     $RemoveXml = @"
 <Configuration>
   <Remove All="TRUE" />
-  <Display Level="Full" AcceptEULA="TRUE" />
+  <Display Level="None" AcceptEULA="TRUE" />
   <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
 </Configuration>
 "@
@@ -128,16 +130,13 @@ if ($Acao -eq "2") {
 
     Write-Host ""
     Write-Host $MsgWait -ForegroundColor Yellow
-    Write-Host "A janela da Microsoft deve aparecer agora. Aguarde ela fechar sozinha." -ForegroundColor Gray
+    Write-Host "Aguarde... a desinstalacao esta em andamento (pode demorar varios minutos)." -ForegroundColor Gray
     Write-Host ""
 
-    # Removido o -NoNewWindow para a janela de progresso aparecer corretamente
-    Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait
+    Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -WindowStyle Hidden
 
-    Write-Host ""
     Write-Host "Desinstalacao concluida." -ForegroundColor Green
 
-    # Pergunta sobre remover ativação no final
     Write-Host ""
     $RemoverAtivacao = Read-Host $MsgAskAct
 
@@ -152,7 +151,6 @@ if ($Acao -eq "2") {
         }
     }
 
-    # Limpeza
     Set-Location -Path "C:\"
     Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -238,6 +236,37 @@ if ($Versao -eq "3") {
     $Excludes += " <ExcludeApp ID=`"Groove`" />`n"
 }
 
+# ===== CONFIRMAÇÃO =====
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host " RESUMO DA INSTALACAO" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Versao: $NomeVersao" -ForegroundColor Yellow
+Write-Host "Arquitetura: $Arch bits" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Aplicativos que SERAO instalados:" -ForegroundColor Green
+
+$Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
+for ($i = 1; $i -le 9; $i++) {
+    if ("$i" -in $OpcoesArray) {
+        Write-Host "  [X] $($Apps[$i-1])" -ForegroundColor Green
+    } else {
+        Write-Host "  [ ] $($Apps[$i-1])" -ForegroundColor DarkGray
+    }
+}
+
+Write-Host ""
+$Confirma = Read-Host $MsgConfirm
+
+if ($Confirma -notmatch '^[sSyY]') {
+    Write-Host ""
+    Write-Host $MsgCancel -ForegroundColor Yellow
+    Set-Location -Path "C:\"
+    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+    exit
+}
+
+# XML só é criado depois da confirmação
 $XmlContent = @"
 <Configuration ID="$(([guid]::NewGuid()).ToString())">
   <Add OfficeClientEdition="$Arch" Channel="$Channel">
@@ -264,7 +293,6 @@ $XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
 Write-Host ""
 Write-Host $MsgStep1 -ForegroundColor Yellow
 
-# --- Download do ODT (método que está funcionando) ---
 $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
 $Destino = $Dir
 
