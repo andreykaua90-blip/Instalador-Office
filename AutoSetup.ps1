@@ -265,7 +265,8 @@ $Excludes    </Product>
                 Write-Host "." -NoNewline -ForegroundColor Gray
             }
             
-            Write-Host " Concluido!" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "Concluido!" -ForegroundColor Green
 
             Write-Host ""
             Write-Host $MsgUninstDone -ForegroundColor Green
