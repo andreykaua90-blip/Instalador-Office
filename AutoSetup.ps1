@@ -200,16 +200,22 @@ while ($true) {
             $Confirma = Read-Host $MsgConfirm
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherAppsRemover }
 
+            # Apaga a pasta se existir, cria uma nova e entra nela
+            Set-Location C:\
+            if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
+            New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+            Set-Location -Path $Dir
+
             if (-not (Get-ODT)) { 
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
-                exit
+                continue MenuPrincipal
             }
             if (-Not (Test-Path ".\setup.exe")) { 
                 Write-Error $MsgError
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
-                exit
+                continue MenuPrincipal
             }
 
             if ($RemoverTudo) {
@@ -389,6 +395,12 @@ $Excludes    </Product>
             $Confirma = Read-Host $MsgConfirm
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherApps }
 
+            # Apaga a pasta se existir, cria uma nova e entra nela
+            Set-Location C:\
+            if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
+            New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+            Set-Location -Path $Dir
+
             $XmlContent = @"
 <Configuration ID="$(([guid]::NewGuid()).ToString())">
   <Add OfficeClientEdition="$Arch" Channel="$Channel">
@@ -417,13 +429,13 @@ $Excludes    </Product>
             if (-not (Get-ODT)) { 
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
-                exit
+                continue MenuPrincipal
             }
             if (-Not (Test-Path ".\setup.exe")) { 
                 Write-Error $MsgError
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
-                exit
+                continue MenuPrincipal
             }
 
             Write-Host ""
