@@ -1,6 +1,7 @@
 $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
+$ProgressPreference = 'SilentlyContinue'
 
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 if ($SysLang -ne "pt") {
