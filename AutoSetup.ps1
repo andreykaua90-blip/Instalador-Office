@@ -113,6 +113,7 @@ while ($true) {
     Write-Host $MsgMenu -ForegroundColor Yellow
     Write-Host $MsgOpt1
     Write-Host $MsgOpt2
+    Write-Host ""
     Write-Host $MsgOpt0
     Write-Host ""
     $Acao = Read-Host $MsgPrompt
@@ -261,6 +262,7 @@ $Excludes    </Product>
         Write-Host "[1] Office LTSC Professional Plus 2024"
         Write-Host "[2] Office LTSC Professional Plus 2021"
         Write-Host "[3] Office Professional Plus 2019"
+        Write-Host ""
         Write-Host $MsgBack
         Write-Host ""
         $Versao = Read-Host $MsgPrompt
