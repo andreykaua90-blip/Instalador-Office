@@ -255,7 +255,27 @@ $Excludes    </Product>
             Write-Host ""
             Write-Host $MsgWait -ForegroundColor Yellow
             Write-Host $MsgWaitWindow -ForegroundColor Gray
-            Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -WindowStyle Hidden
+            
+            # Inicia o desinstalador sem travar o script (-PassThru em vez de -Wait)
+            $SetupProc = Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -WindowStyle Hidden -PassThru
+            
+            # Automação para apertar "Enter" sozinho
+            $wshell = New-Object -ComObject wscript.shell
+            $tentativas = 0
+            
+            # Tenta focar na janela por até 15 segundos
+            while ($tentativas -lt 15) {
+                Start-Sleep -Seconds 1
+                if ($wshell.AppActivate($SetupProc.Id)) {
+                    Start-Sleep -Milliseconds 800 # Aguarda a tela desenhar o botão
+                    $wshell.SendKeys("{ENTER}") # Aperta Enter no botão "Desinstalar"
+                    break
+                }
+                $tentativas++
+            }
+            
+            # Agora pausa o script do PowerShell até a desinstalação inteira terminar
+            $SetupProc | Wait-Process
 
             Write-Host ""
             Write-Host $MsgUninstDone -ForegroundColor Green
