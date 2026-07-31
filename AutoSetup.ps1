@@ -45,6 +45,7 @@ if ($SysLang -ne "pt") {
     $MsgVersion     = "Version:"
     $MsgArch        = "Architecture:"
     $MsgUninstDone  = "Uninstallation completed."
+    $MsgPressExit   = "Press Enter to exit..."
 } else {
     # ==================== PORTUGUÊS ====================
     $MsgAdmin       = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
@@ -85,6 +86,7 @@ if ($SysLang -ne "pt") {
     $MsgVersion     = "Versao:"
     $MsgArch        = "Arquitetura:"
     $MsgUninstDone  = "Desinstalacao concluida."
+    $MsgPressExit   = "Pressione Enter para sair..."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -198,8 +200,17 @@ while ($true) {
             $Confirma = Read-Host $MsgConfirm
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherAppsRemover }
 
-            if (-not (Get-ODT)) { Pause; continue MenuPrincipal }
-            if (-Not (Test-Path ".\setup.exe")) { Write-Error $MsgError; Pause; continue MenuPrincipal }
+            if (-not (Get-ODT)) { 
+                Write-Host $MsgPressExit -ForegroundColor Gray
+                $null = Read-Host
+                exit
+            }
+            if (-Not (Test-Path ".\setup.exe")) { 
+                Write-Error $MsgError
+                Write-Host $MsgPressExit -ForegroundColor Gray
+                $null = Read-Host
+                exit
+            }
 
             if ($RemoverTudo) {
                 $RemoveXml = @"
@@ -265,7 +276,8 @@ $Excludes    </Product>
             Write-Host " $MsgUninstOk" -ForegroundColor Green
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host ""
-            Pause
+            Write-Host $MsgPressExit -ForegroundColor Gray
+            $null = Read-Host
             exit
         }
     }
@@ -402,8 +414,17 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host $MsgStep1 -ForegroundColor Yellow
-            if (-not (Get-ODT)) { Pause; continue MenuPrincipal }
-            if (-Not (Test-Path ".\setup.exe")) { Write-Error $MsgError; Pause; continue MenuPrincipal }
+            if (-not (Get-ODT)) { 
+                Write-Host $MsgPressExit -ForegroundColor Gray
+                $null = Read-Host
+                exit
+            }
+            if (-Not (Test-Path ".\setup.exe")) { 
+                Write-Error $MsgError
+                Write-Host $MsgPressExit -ForegroundColor Gray
+                $null = Read-Host
+                exit
+            }
 
             Write-Host ""
             Write-Host "$MsgStep2 - $NomeVersao ($Arch bits)..." -ForegroundColor Yellow
@@ -430,7 +451,8 @@ $Excludes    </Product>
             Write-Host " $MsgSuccess" -ForegroundColor Green
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host ""
-            Pause
+            Write-Host $MsgPressExit -ForegroundColor Gray
+            $null = Read-Host
             exit
         }
     }
