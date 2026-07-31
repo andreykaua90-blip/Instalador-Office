@@ -6,63 +6,85 @@ $ProgressPreference = 'SilentlyContinue'
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 
 if ($SysLang -ne "pt") {
-    $MsgAdmin     = "Permission denied! Please open PowerShell as Administrator and run the command again."
-    $Title        = "Automatic Installer / Uninstaller - Office"
-    $MsgMenu      = "What do you want to do?"
-    $MsgOpt1      = "[1] Install Office"
-    $MsgOpt2      = "[2] Uninstall Office"
-    $MsgOpt0      = "[0] Exit"
-    $MsgSelectVer = "Select the Office version:"
-    $MsgSelect    = "Select the programs you want to INSTALL:"
-    $MsgSelectRem = "Select the programs you want to REMOVE:"
-    $MsgInput     = "Enter the numbers separated by comma (e.g. 1,2,3) or A for ALL or 0 to go back"
-    $MsgStep1     = "[1/3] Downloading Office Deployment Tool and extracting..."
-    $MsgError     = "[ERROR] Failed to extract setup.exe."
-    $MsgStep2     = "[2/3] Installing Office"
-    $MsgWait      = "Please wait... This may take a few minutes."
-    $MsgStep3     = "[3/3] Starting activation (Ohook)..."
-    $MsgClean     = "Cleaning up temporary files..."
-    $MsgSuccess   = "Process finished successfully!"
-    $MsgODTFail   = "Could not locate the Office Deployment Tool download link."
-    $MsgActivate  = "Do you want to activate Office now using Ohook? (Y/N)"
-    $MsgSkipped   = "Activation skipped."
-    $MsgUninstOk  = "Office uninstalled successfully!"
-    $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
-    $MsgRemAct    = "Removing activation..."
-    $MsgInvalid   = "Invalid option."
-    $MsgConfirm   = "Confirm? (Y = Continue / N = Back)"
-    $MsgBack      = "[0] Back"
-    $MsgAll       = "[A] All"
-    $MsgPrompt    = "Enter your choice"
+    # ==================== ENGLISH ====================
+    $MsgAdmin       = "Permission denied! Please open PowerShell as Administrator and run the command again."
+    $Title          = "Automatic Installer / Uninstaller - Office"
+    $MsgMenu        = "What do you want to do?"
+    $MsgOpt1        = "[1] Install Office"
+    $MsgOpt2        = "[2] Uninstall Office"
+    $MsgOpt0        = "[0] Exit"
+    $MsgSelectVer   = "Select the Office version:"
+    $MsgSelect      = "Select the programs you want to INSTALL:"
+    $MsgSelectRem   = "Select the programs you want to REMOVE:"
+    $MsgInput       = "Enter the numbers separated by comma (e.g. 1,2,3) or A for ALL or 0 to go back"
+    $MsgStep1       = "[1/3] Downloading Office Deployment Tool and extracting..."
+    $MsgError       = "[ERROR] Failed to extract setup.exe."
+    $MsgStep2       = "[2/3] Installing Office"
+    $MsgWait        = "Please wait... This may take a few minutes."
+    $MsgStep3       = "[3/3] Starting activation (Ohook)..."
+    $MsgClean       = "Cleaning up temporary files..."
+    $MsgSuccess     = "Process finished successfully!"
+    $MsgODTFail     = "Could not locate the Office Deployment Tool download link."
+    $MsgActivate    = "Do you want to activate Office now using Ohook? (Y/N)"
+    $MsgSkipped     = "Activation skipped."
+    $MsgUninstOk    = "Office uninstalled successfully!"
+    $MsgAskAct      = "Do you also want to remove the activation (Ohook)? (Y/N)"
+    $MsgRemAct      = "Removing activation..."
+    $MsgInvalid     = "Invalid option."
+    $MsgConfirm     = "Confirm? (Y = Continue / N = Back)"
+    $MsgBack        = "[0] Back"
+    $MsgAll         = "[A] All"
+    $MsgPrompt      = "Enter your choice"
+    $MsgGettingODT  = "Getting Office Deployment Tool download link..."
+    $MsgDownloading = "Downloading ODT..."
+    $MsgExtracting  = "Extracting files..."
+    $MsgWaitWindow  = "The Microsoft window should appear now. Wait for it to close by itself."
+    $MsgRemoved     = "Applications that will be REMOVED:"
+    $MsgInstalled   = "Applications that will be INSTALLED:"
+    $MsgSummary     = "INSTALLATION SUMMARY"
+    $MsgVersion     = "Version:"
+    $MsgArch        = "Architecture:"
+    $MsgUninstDone  = "Uninstallation completed."
 } else {
-    $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
-    $Title        = "Instalador / Desinstalador Automatico - Office"
-    $MsgMenu      = "O que deseja fazer?"
-    $MsgOpt1      = "[1] Instalar Office"
-    $MsgOpt2      = "[2] Desinstalar Office"
-    $MsgOpt0      = "[0] Sair"
-    $MsgSelectVer = "Selecione a versao do Office:"
-    $MsgSelect    = "Selecione os programas que deseja INSTALAR:"
-    $MsgSelectRem = "Selecione os programas que deseja REMOVER:"
-    $MsgInput     = "Digite os numeros separados por virgula (ex: 1,2,3) ou A para TODOS ou 0 para voltar"
-    $MsgStep1     = "[1/3] Baixando Office Deployment Tool e extraindo..."
-    $MsgError     = "[ERRO] Falha ao extrair o setup.exe."
-    $MsgStep2     = "[2/3] Instalando o Office"
-    $MsgWait      = "Aguarde... Isso pode demorar alguns minutos."
-    $MsgStep3     = "[3/3] Iniciando ativacao (Ohook)..."
-    $MsgClean     = "Limpando arquivos temporarios..."
-    $MsgSuccess   = "Processo finalizado com sucesso!"
-    $MsgODTFail   = "Nao foi possivel localizar o link de download do Office Deployment Tool."
-    $MsgActivate  = "Deseja ativar o Office agora usando Ohook? (S/N)"
-    $MsgSkipped   = "Ativacao ignorada."
-    $MsgUninstOk  = "Office desinstalado com sucesso!"
-    $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
-    $MsgRemAct    = "Removendo ativacao..."
-    $MsgInvalid   = "Opcao invalida."
-    $MsgConfirm   = "Confirmar? (S = Continuar / N = Voltar)"
-    $MsgBack      = "[0] Voltar"
-    $MsgAll       = "[A] Todos"
-    $MsgPrompt    = "Digite sua opcao"
+    # ==================== PORTUGUÊS ====================
+    $MsgAdmin       = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
+    $Title          = "Instalador / Desinstalador Automatico - Office"
+    $MsgMenu        = "O que deseja fazer?"
+    $MsgOpt1        = "[1] Instalar Office"
+    $MsgOpt2        = "[2] Desinstalar Office"
+    $MsgOpt0        = "[0] Sair"
+    $MsgSelectVer   = "Selecione a versao do Office:"
+    $MsgSelect      = "Selecione os programas que deseja INSTALAR:"
+    $MsgSelectRem   = "Selecione os programas que deseja REMOVER:"
+    $MsgInput       = "Digite os numeros separados por virgula (ex: 1,2,3) ou A para TODOS ou 0 para voltar"
+    $MsgStep1       = "[1/3] Baixando Office Deployment Tool e extraindo..."
+    $MsgError       = "[ERRO] Falha ao extrair o setup.exe."
+    $MsgStep2       = "[2/3] Instalando o Office"
+    $MsgWait        = "Aguarde... Isso pode demorar alguns minutos."
+    $MsgStep3       = "[3/3] Iniciando ativacao (Ohook)..."
+    $MsgClean       = "Limpando arquivos temporarios..."
+    $MsgSuccess     = "Processo finalizado com sucesso!"
+    $MsgODTFail     = "Nao foi possivel localizar o link de download do Office Deployment Tool."
+    $MsgActivate    = "Deseja ativar o Office agora usando Ohook? (S/N)"
+    $MsgSkipped     = "Ativacao ignorada."
+    $MsgUninstOk    = "Office desinstalado com sucesso!"
+    $MsgAskAct      = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
+    $MsgRemAct      = "Removendo ativacao..."
+    $MsgInvalid     = "Opcao invalida."
+    $MsgConfirm     = "Confirmar? (S = Continuar / N = Voltar)"
+    $MsgBack        = "[0] Voltar"
+    $MsgAll         = "[A] Todos"
+    $MsgPrompt      = "Digite sua opcao"
+    $MsgGettingODT  = "Obtendo link de download do ODT..."
+    $MsgDownloading = "Baixando ODT..."
+    $MsgExtracting  = "Extraindo arquivos..."
+    $MsgWaitWindow  = "A janela da Microsoft deve aparecer agora. Aguarde ela fechar sozinha."
+    $MsgRemoved     = "Aplicativos que SERAO REMOVIDOS:"
+    $MsgInstalled   = "Aplicativos que SERAO instalados:"
+    $MsgSummary     = "RESUMO DA INSTALACAO"
+    $MsgVersion     = "Versao:"
+    $MsgArch        = "Arquitetura:"
+    $MsgUninstDone  = "Desinstalacao concluida."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -84,16 +106,16 @@ function Show-Header {
 }
 
 function Get-ODT {
-    Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
+    Write-Host $MsgGettingODT -ForegroundColor Gray
     try {
         $html = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=49117" -UseBasicParsing -ErrorAction Stop
         $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
         if ($html.Content -match $regex) {
             $DownloadUrl = $matches[0]
             $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
-            Write-Host "Baixando ODT..." -ForegroundColor Gray
+            Write-Host $MsgDownloading -ForegroundColor Gray
             Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
-            Write-Host "Extraindo arquivos..." -ForegroundColor Gray
+            Write-Host $MsgExtracting -ForegroundColor Gray
             Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
             return $true
         } else {
@@ -162,7 +184,7 @@ while ($true) {
             }
 
             Show-Header
-            Write-Host "Aplicativos que SERAO REMOVIDOS:" -ForegroundColor Yellow
+            Write-Host $MsgRemoved -ForegroundColor Yellow
             $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
             for ($i = 1; $i -le 9; $i++) {
                 if ("$i" -in $OpcoesArray) {
@@ -217,11 +239,11 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host $MsgWait -ForegroundColor Yellow
-            Write-Host "A janela da Microsoft deve aparecer agora. Aguarde ela fechar sozinha." -ForegroundColor Gray
+            Write-Host $MsgWaitWindow -ForegroundColor Gray
             Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -WindowStyle Hidden
 
             Write-Host ""
-            Write-Host "Desinstalacao concluida." -ForegroundColor Green
+            Write-Host $MsgUninstDone -ForegroundColor Green
             Write-Host ""
             $RemoverAtivacao = Read-Host $MsgAskAct
 
@@ -292,7 +314,7 @@ $Excludes    </Product>
         :EscolherApps
         while ($true) {
             Show-Header
-            Write-Host "Versao: $NomeVersao" -ForegroundColor Green
+            Write-Host "$MsgVersion $NomeVersao" -ForegroundColor Green
             Write-Host ""
             Write-Host $MsgSelect -ForegroundColor Yellow
             Write-Host "[1] Word"
@@ -337,11 +359,11 @@ $Excludes    </Product>
             if ($Versao -eq "3") { $Excludes += "      <ExcludeApp ID=`"Groove`" />`n" }
 
             Show-Header
-            Write-Host "RESUMO DA INSTALACAO" -ForegroundColor Cyan
-            Write-Host "Versao: $NomeVersao" -ForegroundColor Yellow
-            Write-Host "Arquitetura: $Arch bits" -ForegroundColor Yellow
+            Write-Host $MsgSummary -ForegroundColor Cyan
+            Write-Host "$MsgVersion $NomeVersao" -ForegroundColor Yellow
+            Write-Host "$MsgArch $Arch bits" -ForegroundColor Yellow
             Write-Host ""
-            Write-Host "Aplicativos que SERAO instalados:" -ForegroundColor Green
+            Write-Host $MsgInstalled -ForegroundColor Green
             $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
             for ($i = 1; $i -le 9; $i++) {
                 if ("$i" -in $OpcoesArray) {
