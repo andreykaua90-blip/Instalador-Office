@@ -119,14 +119,22 @@ if ($Acao -eq "2") {
     $RemoveXml = @"
 <Configuration>
   <Remove All="TRUE" />
-  <Display Level="None" AcceptEULA="TRUE" />
+  <Display Level="Full" AcceptEULA="TRUE" />
   <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
 </Configuration>
 "@
     $RemoveXml | Out-File -FilePath ".\remove.xml" -Encoding UTF8
 
-    Write-Host $MsgWait -ForegroundColor Gray
-    Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -NoNewWindow
+    Write-Host ""
+    Write-Host $MsgWait -ForegroundColor Yellow
+    Write-Host "A janela da Microsoft deve aparecer agora. Aguarde ela fechar sozinha." -ForegroundColor Gray
+    Write-Host ""
+
+    # Removido o -NoNewWindow para a janela de progresso aparecer corretamente
+    Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait
+
+    Write-Host ""
+    Write-Host "Desinstalacao concluida." -ForegroundColor Green
 
     # Pergunta sobre remover ativação no final
     Write-Host ""
