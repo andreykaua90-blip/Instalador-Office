@@ -2,38 +2,48 @@ $Host.UI.RawUI.BackgroundColor = "Black"
 $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 
-# Detecta automaticamente o idioma do sistema
+# Detecta idioma
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 if ($SysLang -ne "pt") {
     $MsgAdmin     = "Permission denied! Please open PowerShell as Administrator and run the command again."
-    $Title        = "Automatic Installer - Office LTSC / ProPlus"
+    $Title        = "Automatic Installer / Uninstaller - Office"
+    $MsgMenu      = "What do you want to do?"
     $MsgSelectVer = "Select the Office version you want to install:"
     $MsgSelect    = "Select ONLY the programs you want to INSTALL:"
     $MsgInput     = "Enter the desired numbers separated by comma (e.g., 1,2,3)"
     $MsgStep1     = "[1/3] Downloading Office Deployment Tool and extracting..."
-    $MsgError     = "[ERROR] Failed to extract setup.exe. Check the download."
+    $MsgError     = "[ERROR] Failed to extract setup.exe."
     $MsgStep2     = "[2/3] Installing Office"
-    $MsgWait      = "Please wait for the Microsoft window to finish the progress. This may take a few minutes."
-    $MsgStep3     = "[3/3] Starting automatic activation process (Ohook)..."
+    $MsgWait      = "Please wait for the Microsoft window to finish. This may take a few minutes."
+    $MsgStep3     = "[3/3] Starting automatic activation (Ohook)..."
     $MsgClean     = "Cleaning up temporary files..."
     $MsgSuccess   = "Process finished successfully!"
     $MsgODTFail   = "Could not locate the Office Deployment Tool download link."
-    $MsgInvalid   = "Invalid option. Please run the script again."
+    $MsgInvalid   = "Invalid option."
+    $MsgUninst    = "Uninstalling Office completely..."
+    $MsgUninstOk  = "Office uninstalled successfully!"
+    $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
+    $MsgRemAct    = "Removing activation..."
 } else {
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
-    $Title        = "Instalador Automatico - Office LTSC / ProPlus"
+    $Title        = "Instalador / Desinstalador Automatico - Office"
+    $MsgMenu      = "O que deseja fazer?"
     $MsgSelectVer = "Selecione a versao do Office que deseja instalar:"
     $MsgSelect    = "Selecione APENAS os programas que deseja INSTALAR:"
     $MsgInput     = "Digite os numeros desejados separados por virgula (ex: 1,2,3)"
     $MsgStep1     = "[1/3] Baixando Office Deployment Tool e extraindo..."
-    $MsgError     = "[ERRO] Falha ao extrair o setup.exe. Verifique o download."
+    $MsgError     = "[ERRO] Falha ao extrair o setup.exe."
     $MsgStep2     = "[2/3] Instalando o Office"
     $MsgWait      = "Aguarde a janela da Microsoft concluir o progresso. Isso pode demorar alguns minutos."
     $MsgStep3     = "[3/3] Iniciando o processo de ativacao automatica (Ohook)..."
     $MsgClean     = "Limpando arquivos temporarios..."
     $MsgSuccess   = "Processo finalizado com sucesso!"
     $MsgODTFail   = "Nao foi possivel localizar o link de download do Office Deployment Tool."
-    $MsgInvalid   = "Opcao invalida. Execute o script novamente."
+    $MsgInvalid   = "Opcao invalida."
+    $MsgUninst    = "Desinstalando o Office completamente..."
+    $MsgUninstOk  = "Office desinstalado com sucesso!"
+    $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
+    $MsgRemAct    = "Removendo ativacao..."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -51,6 +61,90 @@ Write-Host "========================================================" -Foregroun
 Write-Host " $Title" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
+Write-Host $MsgMenu -ForegroundColor Yellow
+Write-Host "[1] Instalar Office"
+Write-Host "[2] Desinstalar Office"
+Write-Host ""
+$Acao = Read-Host "Digite 1 ou 2"
+
+# ======================== DESINSTALAR ========================
+if ($Acao -eq "2") {
+
+    Write-Host ""
+    Write-Host $MsgUninst -ForegroundColor Yellow
+
+    # Baixa ODT
+    $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
+    try {
+        $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing
+        $regex = '"url":[](https://download.microsoft.com/download/[^"]+officedeploymenttool[^"]+\.exe)"'
+        if ($html.Content -match $regex) {
+            $DownloadUrl = $matches[1] -replace '\\u0026','&' -replace '\\/','/'
+            $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
+            Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo
+            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
+        } else {
+            Write-Error $MsgODTFail
+            Break
+        }
+    } catch {
+        Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
+        Break
+    }
+
+    if (-Not (Test-Path ".\setup.exe")) {
+        Write-Error $MsgError
+        Break
+    }
+
+    # XML de remoção total
+    $RemoveXml = @"
+<Configuration>
+  <Remove All="TRUE" />
+  <Display Level="None" AcceptEULA="TRUE" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+</Configuration>
+"@
+    $RemoveXml | Out-File -FilePath ".\remove.xml" -Encoding UTF8
+
+    Write-Host $MsgWait -ForegroundColor Gray
+    Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -NoNewWindow
+
+    # Pergunta sobre remover ativação no final
+    Write-Host ""
+    $RemoverAtivacao = Read-Host $MsgAskAct
+
+    if ($RemoverAtivacao -match '^[sSyY]') {
+        Write-Host ""
+        Write-Host $MsgRemAct -ForegroundColor Yellow
+        try {
+            $MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
+            Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/Ohook-Uninstall"
+        } catch {
+            Write-Warning "Nao foi possivel remover a ativacao automaticamente."
+        }
+    }
+
+    # Limpeza final
+    Set-Location C:\
+    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+
+    Write-Host ""
+    Write-Host "========================================================" -ForegroundColor Green
+    Write-Host " $MsgUninstOk" -ForegroundColor Green
+    Write-Host "========================================================" -ForegroundColor Green
+    exit
+}
+
+# ======================== INSTALAR ========================
+if ($Acao -ne "1") {
+    Write-Error $MsgInvalid
+    Set-Location C:\
+    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+    Break
+}
+
+Write-Host ""
 Write-Host $MsgSelectVer -ForegroundColor Yellow
 Write-Host "[1] Office LTSC Professional Plus 2024"
 Write-Host "[2] Office LTSC Professional Plus 2021"
@@ -60,21 +154,21 @@ $Versao = Read-Host "Digite o numero da versao (1, 2 ou 3)"
 
 switch ($Versao) {
     "1" {
-        $Channel   = "PerpetualVL2024"
-        $ProductID = "ProPlus2024Volume"
-        $PIDKEY    = "XJ2XN-FW8RK-P4HMP-DKDBV-GCVGB"
+        $Channel    = "PerpetualVL2024"
+        $ProductID  = "ProPlus2024Volume"
+        $PIDKEY     = "XJ2XN-FW8RK-P4HMP-DKDBV-GCVGB"
         $NomeVersao = "Office LTSC Professional Plus 2024"
     }
     "2" {
-        $Channel   = "PerpetualVL2021"
-        $ProductID = "ProPlus2021Volume"
-        $PIDKEY    = "FXYTK-NJJ8C-GB6DW-3DYQT-6F7TH"
+        $Channel    = "PerpetualVL2021"
+        $ProductID  = "ProPlus2021Volume"
+        $PIDKEY     = "FXYTK-NJJ8C-GB6DW-3DYQT-6F7TH"
         $NomeVersao = "Office LTSC Professional Plus 2021"
     }
     "3" {
-        $Channel   = "PerpetualVL2019"
-        $ProductID = "ProPlus2019Volume"
-        $PIDKEY    = "NMMKJ-6RK4F-KMJVX-8D9MJ-6MWKP"
+        $Channel    = "PerpetualVL2019"
+        $ProductID  = "ProPlus2019Volume"
+        $PIDKEY     = "NMMKJ-6RK4F-KMJVX-8D9MJ-6MWKP"
         $NomeVersao = "Office Professional Plus 2019"
     }
     default {
@@ -113,9 +207,7 @@ if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" 
 if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
 if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
 
-# Exclusões extras comuns (Groove = OneDrive for Business antigo)
 if ($Versao -eq "3") {
-    # 2019 costuma excluir Groove por padrão
     $Excludes += "      <ExcludeApp ID=`"Groove`" />`n"
 }
 
@@ -146,41 +238,28 @@ $XmlContent | Out-File -FilePath ".\config.xml" -Encoding UTF8
 Write-Host ""
 Write-Host $MsgStep1 -ForegroundColor Yellow
 
-# ========== Baixar e extrair o Office Deployment Tool (sempre atualizado) ==========
 $DownloadPage = "https://www.microsoft.com/en-us/download/details.aspx?id=49117"
-
-Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
 try {
     $html = Invoke-WebRequest -Uri $DownloadPage -UseBasicParsing
     $regex = '"url":[](https://download.microsoft.com/download/[^"]+officedeploymenttool[^"]+\.exe)"'
     if ($html.Content -match $regex) {
         $DownloadUrl = $matches[1] -replace '\\u0026','&' -replace '\\/','/'
         $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
-        
         Write-Host "Baixando ODT..." -ForegroundColor Gray
         Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo
-        
-        Write-Host "Extraindo arquivos..." -ForegroundColor Gray
+        Write-Host "Extraindo..." -ForegroundColor Gray
         Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
-    }
-    else {
+    } else {
         Write-Error $MsgODTFail
-        Set-Location C:\
-        Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         Break
     }
-}
-catch {
-    Write-Error "Erro ao baixar o Office Deployment Tool: $($_.Exception.Message)"
-    Set-Location C:\
-    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+} catch {
+    Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
     Break
 }
 
 if (-Not (Test-Path ".\setup.exe")) {
     Write-Error $MsgError
-    Set-Location C:\
-    Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
     Break
 }
 
