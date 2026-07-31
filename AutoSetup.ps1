@@ -10,6 +10,7 @@ if ($SysLang -ne "pt") {
     $MsgMenu      = "What do you want to do?"
     $MsgSelectVer = "Select the Office version:"
     $MsgSelect    = "Select the programs you want to INSTALL:"
+    $MsgSelectRem = "Select the programs you want to REMOVE:"
     $MsgInput     = "Enter the numbers separated by comma (e.g. 1,2,3) or A for ALL or 0 to go back"
     $MsgStep1     = "[1/3] Downloading Office Deployment Tool and extracting..."
     $MsgError     = "[ERROR] Failed to extract setup.exe."
@@ -26,14 +27,14 @@ if ($SysLang -ne "pt") {
     $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
     $MsgRemAct    = "Removing activation..."
     $MsgInvalid   = "Invalid option."
-    $MsgConfirm   = "Confirm installation? (Y = Install / N = Back)"
-    $MsgCancel    = "Returning..."
+    $MsgConfirm   = "Confirm? (Y = Continue / N = Back)"
 } else {
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title        = "Instalador / Desinstalador Automatico - Office"
     $MsgMenu      = "O que deseja fazer?"
     $MsgSelectVer = "Selecione a versao do Office:"
     $MsgSelect    = "Selecione os programas que deseja INSTALAR:"
+    $MsgSelectRem = "Selecione os programas que deseja REMOVER:"
     $MsgInput     = "Digite os numeros separados por virgula (ex: 1,2,3) ou A para TODOS ou 0 para voltar"
     $MsgStep1     = "[1/3] Baixando Office Deployment Tool e extraindo..."
     $MsgError     = "[ERRO] Falha ao extrair o setup.exe."
@@ -50,8 +51,7 @@ if ($SysLang -ne "pt") {
     $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
     $MsgRemAct    = "Removendo ativacao..."
     $MsgInvalid   = "Opcao invalida."
-    $MsgConfirm   = "Confirmar instalacao? (S = Instalar / N = Voltar)"
-    $MsgCancel    = "Voltando..."
+    $MsgConfirm   = "Confirmar? (S = Continuar / N = Voltar)"
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -70,6 +70,29 @@ function Show-Header {
     Write-Host " $Title" -ForegroundColor Cyan
     Write-Host "========================================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+function Get-ODT {
+    Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
+    try {
+        $html = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=49117" -UseBasicParsing -ErrorAction Stop
+        $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
+        if ($html.Content -match $regex) {
+            $DownloadUrl = $matches[0]
+            $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
+            Write-Host "Baixando ODT..." -ForegroundColor Gray
+            Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
+            Write-Host "Extraindo arquivos..." -ForegroundColor Gray
+            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
+            return $true
+        } else {
+            Write-Error $MsgODTFail
+            return $false
+        }
+    } catch {
+        Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
+        return $false
+    }
 }
 
 # ====================== MENU PRINCIPAL ======================
@@ -91,67 +114,100 @@ while ($true) {
 
     # ====================== DESINSTALAR ======================
     if ($Acao -eq "2") {
-        :MenuDesinstalar
+        :EscolherAppsRemover
         while ($true) {
             Show-Header
-            Write-Host $MsgUninst -ForegroundColor Yellow
+            Write-Host $MsgSelectRem -ForegroundColor Yellow
+            Write-Host "[1] Word"
+            Write-Host "[2] Excel"
+            Write-Host "[3] PowerPoint"
+            Write-Host "[4] Access"
+            Write-Host "[5] Outlook"
+            Write-Host "[6] OneNote"
+            Write-Host "[7] Publisher"
+            Write-Host "[8] OneDrive"
+            Write-Host "[9] Lync (Skype)"
             Write-Host ""
-            Write-Host "[1] Desinstalar tudo"
+            Write-Host "[A] Remover TODOS"
             Write-Host "[0] Voltar"
             Write-Host ""
-            $OpcaoDes = Read-Host "Digite 1 ou 0"
+            $Opcoes = Read-Host $MsgInput
 
-            if ($OpcaoDes -eq "0") { continue MenuPrincipal }
-            if ($OpcaoDes -ne "1") {
+            if ($Opcoes -eq "0") { continue MenuPrincipal }
+
+            if ($Opcoes -match '^[aA]$') {
+                $OpcoesArray = @("1","2","3","4","5","6","7","8","9")
+                $RemoverTudo = $true
+            } else {
+                $OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[1-9]$' }
+                $RemoverTudo = $false
+            }
+
+            if ($OpcoesArray.Count -eq 0) {
                 Write-Host $MsgInvalid -ForegroundColor Red
-                Start-Sleep -Seconds 1
-                continue MenuDesinstalar
+                Start-Sleep 1
+                continue EscolherAppsRemover
+            }
+
+            # Resumo
+            Show-Header
+            Write-Host "Aplicativos que SERAO REMOVIDOS:" -ForegroundColor Yellow
+            $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
+            for ($i = 1; $i -le 9; $i++) {
+                if ("$i" -in $OpcoesArray) {
+                    Write-Host "  [X] $($Apps[$i-1])" -ForegroundColor Red
+                } else {
+                    Write-Host "  [ ] $($Apps[$i-1])" -ForegroundColor DarkGray
+                }
             }
 
             Write-Host ""
-            Write-Host "Obtendo link de download do ODT..." -ForegroundColor Gray
-            try {
-                $html = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=49117" -UseBasicParsing -ErrorAction Stop
-                $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
-                if ($html.Content -match $regex) {
-                    $DownloadUrl = $matches[0]
-                    $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
-                    Write-Host "Baixando ODT..." -ForegroundColor Gray
-                    Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
-                    Write-Host "Extraindo arquivos..." -ForegroundColor Gray
-                    Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
-                } else {
-                    Write-Error $MsgODTFail
-                    Pause
-                    continue MenuPrincipal
-                }
-            } catch {
-                Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
-                Pause
-                continue MenuPrincipal
-            }
+            $Confirma = Read-Host $MsgConfirm
+            if ($Confirma -notmatch '^[sSyY]') { continue EscolherAppsRemover }
 
-            if (-Not (Test-Path ".\setup.exe")) {
-                Write-Error $MsgError
-                Pause
-                continue MenuPrincipal
-            }
+            if (-not (Get-ODT)) { Pause; continue MenuPrincipal }
+            if (-Not (Test-Path ".\setup.exe")) { Write-Error $MsgError; Pause; continue MenuPrincipal }
 
-            $RemoveXml = @"
+            if ($RemoverTudo) {
+                $RemoveXml = @"
 <Configuration>
   <Remove All="TRUE" />
   <Display Level="Full" AcceptEULA="TRUE" />
   <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
 </Configuration>
 "@
+            } else {
+                # Remove apenas os selecionados (mantém os outros)
+                $Excludes = ""
+                if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
+                if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
+                if ("3" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"PowerPoint`" />`n" }
+                if ("4" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Access`" />`n" }
+                if ("5" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Outlook`" />`n" }
+                if ("6" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneNote`" />`n" }
+                if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" />`n" }
+                if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
+                if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
+
+                $RemoveXml = @"
+<Configuration>
+  <Add OfficeClientEdition="$Arch" Channel="PerpetualVL2024">
+    <Product ID="ProPlus2024Volume">
+      <Language ID="MatchOS" />
+$Excludes    </Product>
+  </Add>
+  <Display Level="Full" AcceptEULA="TRUE" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+  <RemoveMSI />
+</Configuration>
+"@
+            }
+
             $RemoveXml | Out-File ".\remove.xml" -Encoding UTF8
 
             Write-Host ""
             Write-Host $MsgWait -ForegroundColor Yellow
             Write-Host "A janela da Microsoft deve aparecer agora. Aguarde ela fechar sozinha." -ForegroundColor Gray
-            Write-Host ""
-
-            # Janela da Microsoft aparece + sem terminal extra
             Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -Wait -WindowStyle Hidden
 
             Write-Host ""
@@ -185,7 +241,7 @@ while ($true) {
 
     if ($Acao -ne "1") {
         Write-Host $MsgInvalid -ForegroundColor Red
-        Start-Sleep -Seconds 1
+        Start-Sleep 1
         continue MenuPrincipal
     }
 
@@ -205,31 +261,24 @@ while ($true) {
 
         switch ($Versao) {
             "1" {
-                $Channel    = "PerpetualVL2024"
-                $ProductID  = "ProPlus2024Volume"
-                $PIDKEY     = "XJ2XN-FW8RK-P4HMP-DKDBV-GCVGB"
-                $NomeVersao = "Office LTSC Professional Plus 2024"
+                $Channel = "PerpetualVL2024"; $ProductID = "ProPlus2024Volume"
+                $PIDKEY = "XJ2XN-FW8RK-P4HMP-DKDBV-GCVGB"; $NomeVersao = "Office LTSC Professional Plus 2024"
             }
             "2" {
-                $Channel    = "PerpetualVL2021"
-                $ProductID  = "ProPlus2021Volume"
-                $PIDKEY     = "FXYTK-NJJ8C-GB6DW-3DYQT-6F7TH"
-                $NomeVersao = "Office LTSC Professional Plus 2021"
+                $Channel = "PerpetualVL2021"; $ProductID = "ProPlus2021Volume"
+                $PIDKEY = "FXYTK-NJJ8C-GB6DW-3DYQT-6F7TH"; $NomeVersao = "Office LTSC Professional Plus 2021"
             }
             "3" {
-                $Channel    = "PerpetualVL2019"
-                $ProductID  = "ProPlus2019Volume"
-                $PIDKEY     = "NMMKJ-6RK4F-KMJVX-8D9MJ-6MWKP"
-                $NomeVersao = "Office Professional Plus 2019"
+                $Channel = "PerpetualVL2019"; $ProductID = "ProPlus2019Volume"
+                $PIDKEY = "NMMKJ-6RK4F-KMJVX-8D9MJ-6MWKP"; $NomeVersao = "Office Professional Plus 2019"
             }
             default {
                 Write-Host $MsgInvalid -ForegroundColor Red
-                Start-Sleep -Seconds 1
+                Start-Sleep 1
                 continue EscolherVersao
             }
         }
 
-        # ===== ESCOLHER APLICATIVOS =====
         :EscolherApps
         while ($true) {
             Show-Header
@@ -261,7 +310,7 @@ while ($true) {
 
             if ($OpcoesArray.Count -eq 0) {
                 Write-Host $MsgInvalid -ForegroundColor Red
-                Start-Sleep -Seconds 1
+                Start-Sleep 1
                 continue EscolherApps
             }
 
@@ -277,15 +326,12 @@ while ($true) {
             if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
             if ($Versao -eq "3") { $Excludes += "      <ExcludeApp ID=`"Groove`" />`n" }
 
-            # ===== CONFIRMAÇÃO =====
             Show-Header
             Write-Host "RESUMO DA INSTALACAO" -ForegroundColor Cyan
-            Write-Host "========================================" -ForegroundColor Cyan
             Write-Host "Versao: $NomeVersao" -ForegroundColor Yellow
             Write-Host "Arquitetura: $Arch bits" -ForegroundColor Yellow
             Write-Host ""
             Write-Host "Aplicativos que SERAO instalados:" -ForegroundColor Green
-
             $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
             for ($i = 1; $i -le 9; $i++) {
                 if ("$i" -in $OpcoesArray) {
@@ -297,11 +343,8 @@ while ($true) {
 
             Write-Host ""
             $Confirma = Read-Host $MsgConfirm
-
-            if ($Confirma -match '^[nN]') { continue EscolherApps }
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherApps }
 
-            # ===== INSTALAÇÃO =====
             $XmlContent = @"
 <Configuration ID="$(([guid]::NewGuid()).ToString())">
   <Add OfficeClientEdition="$Arch" Channel="$Channel">
@@ -327,33 +370,8 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host $MsgStep1 -ForegroundColor Yellow
-
-            try {
-                $html = Invoke-WebRequest -Uri "https://www.microsoft.com/en-us/download/details.aspx?id=49117" -UseBasicParsing -ErrorAction Stop
-                $regex = 'https://download\.microsoft\.com/download/[^\s"''<>]+officedeploymenttool[^\s"''<>]+\.exe'
-                if ($html.Content -match $regex) {
-                    $DownloadUrl = $matches[0]
-                    $Arquivo = Join-Path $Dir "OfficeDeploymentTool.exe"
-                    Write-Host "Baixando ODT..." -ForegroundColor Gray
-                    Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
-                    Write-Host "Extraindo arquivos..." -ForegroundColor Gray
-                    Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
-                } else {
-                    Write-Error $MsgODTFail
-                    Pause
-                    continue MenuPrincipal
-                }
-            } catch {
-                Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
-                Pause
-                continue MenuPrincipal
-            }
-
-            if (-Not (Test-Path ".\setup.exe")) {
-                Write-Error $MsgError
-                Pause
-                continue MenuPrincipal
-            }
+            if (-not (Get-ODT)) { Pause; continue MenuPrincipal }
+            if (-Not (Test-Path ".\setup.exe")) { Write-Error $MsgError; Pause; continue MenuPrincipal }
 
             Write-Host ""
             Write-Host "$MsgStep2 - $NomeVersao ($Arch bits)..." -ForegroundColor Yellow
