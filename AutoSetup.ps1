@@ -278,7 +278,7 @@ $Excludes    </Product>
             Write-Host ""
             Write-Host $MsgPressExit -ForegroundColor Gray
             $null = Read-Host
-            exit
+            continue MenuPrincipal
         }
     }
 
@@ -453,7 +453,7 @@ $Excludes    </Product>
             Write-Host ""
             Write-Host $MsgPressExit -ForegroundColor Gray
             $null = Read-Host
-            exit
+            continue MenuPrincipal
         }
     }
 }
