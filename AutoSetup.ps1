@@ -132,7 +132,7 @@ function Get-ODT {
             Write-Host $MsgDownloading -ForegroundColor Gray
             Invoke-WebRequest -Uri $DownloadUrl -OutFile $Arquivo -ErrorAction Stop
             Write-Host $MsgExtracting -ForegroundColor Gray
-            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -Wait -NoNewWindow
+            Start-Process -FilePath $Arquivo -ArgumentList "/quiet /extract:`"$Dir`"" -WindowStyle Hidden -Wait
             return $true
         } else {
             Write-Error $MsgODTFail
