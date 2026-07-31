@@ -6,7 +6,6 @@ $ProgressPreference = 'SilentlyContinue'
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 
 if ($SysLang -ne "pt") {
-    # ==================== ENGLISH ====================
     $MsgAdmin     = "Permission denied! Please open PowerShell as Administrator and run the command again."
     $Title        = "Automatic Installer / Uninstaller - Office"
     $MsgMenu      = "What do you want to do?"
@@ -37,7 +36,6 @@ if ($SysLang -ne "pt") {
     $MsgAll       = "[A] All"
     $MsgPrompt    = "Enter your choice"
 } else {
-    # ==================== PORTUGUÊS ====================
     $MsgAdmin     = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
     $Title        = "Instalador / Desinstalador Automatico - Office"
     $MsgMenu      = "O que deseja fazer?"
@@ -164,7 +162,6 @@ while ($true) {
                 continue EscolherAppsRemover
             }
 
-            # Resumo
             Show-Header
             Write-Host "Aplicativos que SERAO REMOVIDOS:" -ForegroundColor Yellow
             $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
@@ -241,15 +238,14 @@ $Excludes    </Product>
 
             Set-Location C:\
             Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
-            New-Item -ItemType Directory -Force -Path $Dir | Out-Null
-            Set-Location $Dir
 
             Write-Host ""
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host " $MsgUninstOk" -ForegroundColor Green
             Write-Host "========================================================" -ForegroundColor Green
+            Write-Host ""
             Pause
-            continue MenuPrincipal
+            exit   # ← Agora sai do script depois de apertar Enter
         }
     }
 
@@ -411,8 +407,9 @@ $Excludes    </Product>
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host " $MsgSuccess" -ForegroundColor Green
             Write-Host "========================================================" -ForegroundColor Green
+            Write-Host ""
             Pause
-            exit
+            exit   # ← Agora sai do script depois de apertar Enter
         }
     }
 }
