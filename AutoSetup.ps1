@@ -3,6 +3,9 @@ $Host.UI.RawUI.ForegroundColor = "White"
 Clear-Host
 $ProgressPreference = 'SilentlyContinue'
 
+# Força TLS 1.2 para evitar erros de download de rede em sistemas mais antigos
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 $SysLang = (Get-UICulture).TwoLetterISOLanguageName
 
 if ($SysLang -ne "pt") {
@@ -95,9 +98,8 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 }
 
 $Dir = "C:\Office_Temp"
-New-Item -ItemType Directory -Force -Path $Dir | Out-Null
-Set-Location -Path $Dir
 $Arch = if ([Environment]::Is64BitOperatingSystem) { "64" } else { "32" }
+$AppsList = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
 
 function Show-Header {
     Clear-Host
@@ -105,6 +107,18 @@ function Show-Header {
     Write-Host " $Title" -ForegroundColor Cyan
     Write-Host "========================================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+function Reset-TempDir {
+    Set-Location C:\
+    if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
+    New-Item -ItemType Directory -Force -Path $Dir | Out-Null
+    Set-Location -Path $Dir
+}
+
+function Clear-TempDir {
+    Set-Location C:\
+    if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
 }
 
 function Get-ODT {
@@ -130,6 +144,17 @@ function Get-ODT {
     }
 }
 
+function Get-ExcludesXml($SelectedArray) {
+    $ExcludesStr = ""
+    for ($i = 0; $i -lt $AppsList.Count; $i++) {
+        $AppNum = ($i + 1).ToString()
+        if ($AppNum -notin $SelectedArray) {
+            $ExcludesStr += "      <ExcludeApp ID=`"$($AppsList[$i])`" />`n"
+        }
+    }
+    return $ExcludesStr
+}
+
 # ====================== MENU PRINCIPAL ======================
 :MenuPrincipal
 while ($true) {
@@ -143,8 +168,7 @@ while ($true) {
     $Acao = Read-Host $MsgPrompt
 
     if ($Acao -eq "0") {
-        Set-Location C:\
-        Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+        Clear-TempDir
         exit
     }
 
@@ -154,15 +178,9 @@ while ($true) {
         while ($true) {
             Show-Header
             Write-Host $MsgSelectRem -ForegroundColor Yellow
-            Write-Host "[1] Word"
-            Write-Host "[2] Excel"
-            Write-Host "[3] PowerPoint"
-            Write-Host "[4] Access"
-            Write-Host "[5] Outlook"
-            Write-Host "[6] OneNote"
-            Write-Host "[7] Publisher"
-            Write-Host "[8] OneDrive"
-            Write-Host "[9] Lync (Skype)"
+            for ($i = 0; $i -lt $AppsList.Count; $i++) {
+                Write-Host "[$($i+1)] $($AppsList[$i])"
+            }
             Write-Host ""
             Write-Host $MsgAll
             Write-Host $MsgBack
@@ -171,12 +189,11 @@ while ($true) {
 
             if ($Opcoes -eq "0") { continue MenuPrincipal }
 
-            if ($Opcoes -match '^[aA]$') {
-                $OpcoesArray = @("1","2","3","4","5","6","7","8","9")
-                $RemoverTudo = $true
+            $RemoverTudo = ($Opcoes -match '^[aA]$')
+            if ($RemoverTudo) {
+                $OpcoesArray = 1..9 | ForEach-Object { $_.ToString() }
             } else {
                 $OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[1-9]$' }
-                $RemoverTudo = $false
             }
 
             if ($OpcoesArray.Count -eq 0) {
@@ -187,12 +204,12 @@ while ($true) {
 
             Show-Header
             Write-Host $MsgRemoved -ForegroundColor Yellow
-            $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
-            for ($i = 1; $i -le 9; $i++) {
-                if ("$i" -in $OpcoesArray) {
-                    Write-Host "  [X] $($Apps[$i-1])" -ForegroundColor Red
+            for ($i = 0; $i -lt $AppsList.Count; $i++) {
+                $AppNum = ($i + 1).ToString()
+                if ($AppNum -in $OpcoesArray) {
+                    Write-Host "  [X] $($AppsList[$i])" -ForegroundColor Red
                 } else {
-                    Write-Host "  [ ] $($Apps[$i-1])" -ForegroundColor DarkGray
+                    Write-Host "  [ ] $($AppsList[$i])" -ForegroundColor DarkGray
                 }
             }
 
@@ -200,19 +217,10 @@ while ($true) {
             $Confirma = Read-Host $MsgConfirm
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherAppsRemover }
 
-            # Apaga a pasta se existir, cria uma nova e entra nela
-            Set-Location C:\
-            if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
-            New-Item -ItemType Directory -Force -Path $Dir | Out-Null
-            Set-Location -Path $Dir
+            Reset-TempDir
 
-            if (-not (Get-ODT)) { 
-                Write-Host $MsgPressExit -ForegroundColor Gray
-                $null = Read-Host
-                continue MenuPrincipal
-            }
-            if (-Not (Test-Path ".\setup.exe")) { 
-                Write-Error $MsgError
+            if (-not (Get-ODT) -or -not (Test-Path ".\setup.exe")) { 
+                if (-not (Test-Path ".\setup.exe")) { Write-Error $MsgError }
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
                 continue MenuPrincipal
@@ -227,17 +235,7 @@ while ($true) {
 </Configuration>
 "@
             } else {
-                $Excludes = ""
-                if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
-                if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
-                if ("3" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"PowerPoint`" />`n" }
-                if ("4" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Access`" />`n" }
-                if ("5" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Outlook`" />`n" }
-                if ("6" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneNote`" />`n" }
-                if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" />`n" }
-                if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
-                if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
-
+                $Excludes = Get-ExcludesXml -SelectedArray $OpcoesArray
                 $RemoveXml = @"
 <Configuration>
   <Add OfficeClientEdition="$Arch" Channel="PerpetualVL2024">
@@ -274,8 +272,7 @@ $Excludes    </Product>
                 }
             }
 
-            Set-Location C:\
-            Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+            Clear-TempDir
 
             Write-Host ""
             Write-Host "========================================================" -ForegroundColor Green
@@ -335,15 +332,11 @@ $Excludes    </Product>
             Write-Host "$MsgVersion $NomeVersao" -ForegroundColor Green
             Write-Host ""
             Write-Host $MsgSelect -ForegroundColor Yellow
-            Write-Host "[1] Word"
-            Write-Host "[2] Excel"
-            Write-Host "[3] PowerPoint"
-            Write-Host "[4] Access"
-            Write-Host "[5] Outlook"
-            Write-Host "[6] OneNote"
-            Write-Host "[7] Publisher"
-            Write-Host "[8] OneDrive"
-            Write-Host "[9] Lync (Skype)"
+            
+            for ($i = 0; $i -lt $AppsList.Count; $i++) {
+                Write-Host "[$($i+1)] $($AppsList[$i])"
+            }
+            
             Write-Host ""
             Write-Host $MsgAll
             Write-Host $MsgBack
@@ -353,7 +346,7 @@ $Excludes    </Product>
             if ($Opcoes -eq "0") { continue EscolherVersao }
 
             if ($Opcoes -match '^[aA]$') {
-                $OpcoesArray = @("1","2","3","4","5","6","7","8","9")
+                $OpcoesArray = 1..9 | ForEach-Object { $_.ToString() }
             } else {
                 $OpcoesArray = $Opcoes -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^[1-9]$' }
             }
@@ -364,16 +357,7 @@ $Excludes    </Product>
                 continue EscolherApps
             }
 
-            $Excludes = ""
-            if ("1" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Word`" />`n" }
-            if ("2" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Excel`" />`n" }
-            if ("3" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"PowerPoint`" />`n" }
-            if ("4" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Access`" />`n" }
-            if ("5" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Outlook`" />`n" }
-            if ("6" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneNote`" />`n" }
-            if ("7" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Publisher`" />`n" }
-            if ("8" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"OneDrive`" />`n" }
-            if ("9" -notin $OpcoesArray) { $Excludes += "      <ExcludeApp ID=`"Lync`" />`n" }
+            $Excludes = Get-ExcludesXml -SelectedArray $OpcoesArray
             if ($Versao -eq "3") { $Excludes += "      <ExcludeApp ID=`"Groove`" />`n" }
 
             Show-Header
@@ -382,12 +366,13 @@ $Excludes    </Product>
             Write-Host "$MsgArch $Arch bits" -ForegroundColor Yellow
             Write-Host ""
             Write-Host $MsgInstalled -ForegroundColor Green
-            $Apps = @("Word","Excel","PowerPoint","Access","Outlook","OneNote","Publisher","OneDrive","Lync")
-            for ($i = 1; $i -le 9; $i++) {
-                if ("$i" -in $OpcoesArray) {
-                    Write-Host "  [X] $($Apps[$i-1])" -ForegroundColor Green
+            
+            for ($i = 0; $i -lt $AppsList.Count; $i++) {
+                $AppNum = ($i + 1).ToString()
+                if ($AppNum -in $OpcoesArray) {
+                    Write-Host "  [X] $($AppsList[$i])" -ForegroundColor Green
                 } else {
-                    Write-Host "  [ ] $($Apps[$i-1])" -ForegroundColor DarkGray
+                    Write-Host "  [ ] $($AppsList[$i])" -ForegroundColor DarkGray
                 }
             }
 
@@ -395,11 +380,7 @@ $Excludes    </Product>
             $Confirma = Read-Host $MsgConfirm
             if ($Confirma -notmatch '^[sSyY]') { continue EscolherApps }
 
-            # Apaga a pasta se existir, cria uma nova e entra nela
-            Set-Location C:\
-            if (Test-Path $Dir) { Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue }
-            New-Item -ItemType Directory -Force -Path $Dir | Out-Null
-            Set-Location -Path $Dir
+            Reset-TempDir
 
             $XmlContent = @"
 <Configuration ID="$(([guid]::NewGuid()).ToString())">
@@ -426,13 +407,8 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host $MsgStep1 -ForegroundColor Yellow
-            if (-not (Get-ODT)) { 
-                Write-Host $MsgPressExit -ForegroundColor Gray
-                $null = Read-Host
-                continue MenuPrincipal
-            }
-            if (-Not (Test-Path ".\setup.exe")) { 
-                Write-Error $MsgError
+            if (-not (Get-ODT) -or -not (Test-Path ".\setup.exe")) { 
+                if (-not (Test-Path ".\setup.exe")) { Write-Error $MsgError }
                 Write-Host $MsgPressExit -ForegroundColor Gray
                 $null = Read-Host
                 continue MenuPrincipal
@@ -455,8 +431,7 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host $MsgClean -ForegroundColor Gray
-            Set-Location C:\
-            Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
+            Clear-TempDir
 
             Write-Host ""
             Write-Host "========================================================" -ForegroundColor Green
