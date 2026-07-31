@@ -254,7 +254,7 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host "Iniciando a desinstalacao silenciosa..." -ForegroundColor Yellow
-            Write-Host "O Office esta sendo removido no fundo. Aguarde" -NoNewline -ForegroundColor Gray
+            Write-Host "O Office esta sendo removido no fundo. Isso pode levar alguns minutos. Aguarde" -NoNewline -ForegroundColor Gray
             
             # Inicia o desinstalador oculto
             $SetupProc = Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -WindowStyle Hidden -PassThru
@@ -264,7 +264,7 @@ $Excludes    </Product>
                 Start-Sleep -Seconds 2
                 Write-Host "." -NoNewline -ForegroundColor Gray
             }
-            
+
             Write-Host ""
             Write-Host ""
             Write-Host "Concluido!" -ForegroundColor Green
