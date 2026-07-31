@@ -11,7 +11,7 @@ if ($SysLang -ne "pt") {
     $MsgMenu      = "What do you want to do?"
     $MsgOpt1      = "[1] Install Office"
     $MsgOpt2      = "[2] Uninstall Office"
-    $MsgOpt3      = "[3] Exit"
+    $MsgOpt0      = "[0] Exit"
     $MsgSelectVer = "Select the Office version:"
     $MsgSelect    = "Select the programs you want to INSTALL:"
     $MsgSelectRem = "Select the programs you want to REMOVE:"
@@ -26,7 +26,6 @@ if ($SysLang -ne "pt") {
     $MsgODTFail   = "Could not locate the Office Deployment Tool download link."
     $MsgActivate  = "Do you want to activate Office now using Ohook? (Y/N)"
     $MsgSkipped   = "Activation skipped."
-    $MsgUninst    = "Uninstalling Office..."
     $MsgUninstOk  = "Office uninstalled successfully!"
     $MsgAskAct    = "Do you also want to remove the activation (Ohook)? (Y/N)"
     $MsgRemAct    = "Removing activation..."
@@ -41,7 +40,7 @@ if ($SysLang -ne "pt") {
     $MsgMenu      = "O que deseja fazer?"
     $MsgOpt1      = "[1] Instalar Office"
     $MsgOpt2      = "[2] Desinstalar Office"
-    $MsgOpt3      = "[3] Sair"
+    $MsgOpt0      = "[0] Sair"
     $MsgSelectVer = "Selecione a versao do Office:"
     $MsgSelect    = "Selecione os programas que deseja INSTALAR:"
     $MsgSelectRem = "Selecione os programas que deseja REMOVER:"
@@ -56,7 +55,6 @@ if ($SysLang -ne "pt") {
     $MsgODTFail   = "Nao foi possivel localizar o link de download do Office Deployment Tool."
     $MsgActivate  = "Deseja ativar o Office agora usando Ohook? (S/N)"
     $MsgSkipped   = "Ativacao ignorada."
-    $MsgUninst    = "Desinstalando o Office..."
     $MsgUninstOk  = "Office desinstalado com sucesso!"
     $MsgAskAct    = "Deseja tambem remover a ativacao (Ohook)? (S/N)"
     $MsgRemAct    = "Removendo ativacao..."
@@ -115,11 +113,11 @@ while ($true) {
     Write-Host $MsgMenu -ForegroundColor Yellow
     Write-Host $MsgOpt1
     Write-Host $MsgOpt2
-    Write-Host $MsgOpt3
+    Write-Host $MsgOpt0
     Write-Host ""
     $Acao = Read-Host $MsgPrompt
 
-    if ($Acao -eq "3") {
+    if ($Acao -eq "0") {
         Set-Location C:\
         Remove-Item -Path $Dir -Recurse -Force -ErrorAction SilentlyContinue
         exit
@@ -245,7 +243,7 @@ $Excludes    </Product>
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host ""
             Pause
-            exit   # ← Agora sai do script depois de apertar Enter
+            exit
         }
     }
 
@@ -409,7 +407,7 @@ $Excludes    </Product>
             Write-Host "========================================================" -ForegroundColor Green
             Write-Host ""
             Pause
-            exit   # ← Agora sai do script depois de apertar Enter
+            exit
         }
     }
 }
