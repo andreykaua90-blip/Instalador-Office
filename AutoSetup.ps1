@@ -49,6 +49,11 @@ if ($SysLang -ne "pt") {
     $MsgArch        = "Architecture:"
     $MsgUninstDone  = "Uninstallation completed."
     $MsgPressExit   = "Press Enter to exit..."
+    $MsgSilentUninst= "Starting silent uninstallation..."
+    $MsgUninstWait  = "Office is being removed in the background. This may take a few minutes. Please wait"
+    $MsgDone        = "Done!"
+    $MsgODTError    = "Error downloading ODT: "
+    $MsgActRemFail  = "Could not remove the activation."
 } else {
     # ==================== PORTUGUÊS ====================
     $MsgAdmin       = "Permissao negada! Por favor, abra o PowerShell como Administrador e rode o comando novamente."
@@ -90,6 +95,11 @@ if ($SysLang -ne "pt") {
     $MsgArch        = "Arquitetura:"
     $MsgUninstDone  = "Desinstalacao concluida."
     $MsgPressExit   = "Pressione Enter para sair..."
+    $MsgSilentUninst= "Iniciando a desinstalacao silenciosa..."
+    $MsgUninstWait  = "O Office esta sendo removido no fundo. Isso pode levar alguns minutos. Aguarde"
+    $MsgDone        = "Concluido!"
+    $MsgODTError    = "Erro ao baixar o ODT: "
+    $MsgActRemFail  = "Nao foi possivel remover a ativacao."
 }
 
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -139,7 +149,7 @@ function Get-ODT {
             return $false
         }
     } catch {
-        Write-Error "Erro ao baixar o ODT: $($_.Exception.Message)"
+        Write-Error "$MsgODTError $($_.Exception.Message)"
         return $false
     }
 }
@@ -253,8 +263,8 @@ $Excludes    </Product>
             $RemoveXml | Out-File ".\remove.xml" -Encoding UTF8
 
             Write-Host ""
-            Write-Host "Iniciando a desinstalacao silenciosa..." -ForegroundColor Yellow
-            Write-Host "O Office esta sendo removido no fundo. Isso pode levar alguns minutos. Aguarde" -NoNewline -ForegroundColor Gray
+            Write-Host $MsgSilentUninst -ForegroundColor Yellow
+            Write-Host $MsgUninstWait -NoNewline -ForegroundColor Gray
             
             # Inicia o desinstalador oculto
             $SetupProc = Start-Process -FilePath ".\setup.exe" -ArgumentList "/configure remove.xml" -WindowStyle Hidden -PassThru
@@ -267,7 +277,7 @@ $Excludes    </Product>
 
             Write-Host ""
             Write-Host ""
-            Write-Host "Concluido!" -ForegroundColor Green
+            Write-Host $MsgDone -ForegroundColor Green
 
             Write-Host ""
             Write-Host $MsgUninstDone -ForegroundColor Green
@@ -280,7 +290,7 @@ $Excludes    </Product>
                     $MAS = Invoke-RestMethod -Uri 'https://get.activated.win'
                     Invoke-Command -ScriptBlock ([ScriptBlock]::Create($MAS)) -ArgumentList "/Ohook-Uninstall"
                 } catch {
-                    Write-Warning "Nao foi possivel remover a ativacao."
+                    Write-Warning $MsgActRemFail
                 }
             }
 
